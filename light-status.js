@@ -1,7 +1,7 @@
 var hue = require("node-hue-api");
 var constants = require('./constants');
-var _ = require('underscore');
 var api = new hue.HueApi(constants.ip, constants.username);
+var _ = require('underscore');
 
 _.each(constants.lights, function(light) {
 	api.lightStatus(light.id)
