@@ -1,0 +1,13 @@
+{
+  "name": "node-hue",
+  "version": "0.0.0",
+  "repository": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "dependencies": {
+    "node-hue-api": "^1.2.1",
+    "underscore": "^1.8.3"
+  }
+}
