@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "node-hue-api": "^1.2.1",
+    "spark": "^1.0.0",
     "underscore": "^1.8.3"
   }
 }
