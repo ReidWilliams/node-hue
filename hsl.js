@@ -26,7 +26,6 @@ var usage = function() {
 	console.log('"' + lightNames + '"');
 	console.log("HUE is a value between 0 and 359");
 	console.log("SATURATION is a value between 0 and 100");
-	console.log("BRIGHTNESS is a value between 0 and 100");
 }
 
 main();
