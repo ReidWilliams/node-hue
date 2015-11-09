@@ -8,7 +8,7 @@ var _ = require('underscore');
 var light = _.findWhere(constants.lights, {name: 'bookshelf'});
 
 var on = lightState.create().on(true).hsb(50, 50, 100).transition(5000);
-var offing = lightState.create().on(true).hsb(50, 50, 0).transition(30000);
+var off = lightState.create().on(true).hsb(50, 50, 0).transition(30000);
 
 setInterval(function() {
 	particle.getMotion()
