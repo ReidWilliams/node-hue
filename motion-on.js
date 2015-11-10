@@ -19,7 +19,7 @@ setInterval(function() {
 	particle.getMotion()
 	.then(function(reply) {
 		if (reply.result !== 0 && stateOn === false) {
-			clearTimer(timerID);
+			clearTimeout(timerID);
 			api.setLightState(light.id, firstOn);
 			stateOn = true;
 		}
