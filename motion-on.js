@@ -30,7 +30,7 @@ setInterval(function() {
 			api.setLightState(light.id, low);
 			timerID = setTimeout(function() {
 				api.setLightState(light.id, off);
-			}, 30000);
+			}, 10*60*1000);
 			stateOn = false;
 		}
 	})
