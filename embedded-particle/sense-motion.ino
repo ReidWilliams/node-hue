@@ -10,7 +10,7 @@ We're using digital out pins for power and ground because it's
 convenient and doesn't require any wiring.
 */
 
-const bool kDebugLED = true;
+const bool kDebugLED = false;
 // in debug mode the rgb led changes color with the pir signal
 
 const int kGnd = D0;
@@ -118,7 +118,7 @@ void updateDisplay() {
       RGB.color(255, 0, 0);
     }
   } else {
-    RGB.color(0, 0, 50);
+    RGB.color(0, 0, 0);
   }
 }
 
