@@ -5,7 +5,10 @@ var particle = require('./lib-particle');
 var lightState = hue.lightState;
 var _ = require('underscore');
 
-var light = _.findWhere(constants.lights, {name: 'bookshelf'});
+var lights = [
+	_.findWhere(constants.lights, {name: 'bookshelf'}),
+	_.findWhere(constants.lights, {name: 'desk-lamp'})
+	];
 
 var firstOn = lightState.create().on(true).hsb(250, 100, 0);
 var on = lightState.create().on(true).hsb(50, 50, 100).transition(3000);
@@ -20,16 +23,24 @@ setInterval(function() {
 	.then(function(reply) {
 		if (reply.result !== 0 && stateOn === false) {
 			clearTimeout(timerID);
-			api.setLightState(light.id, firstOn);
+			_.each(lights, function(light) {
+				api.setLightState(light.id, firstOn);
+			});
 			stateOn = true;
 		}
 		if (reply.result !== 0 && stateOn === true) {
-			api.setLightState(light.id, on);
+			_.each(lights, function(light) {
+				api.setLightState(light.id, on);
+			});
 		}
 		if (reply.result === 0 && stateOn === true) {
-			api.setLightState(light.id, low);
+			_.each(lights, function(light) {
+				api.setLightState(light.id, low);
+			});
 			timerID = setTimeout(function() {
+				_.each(lights, function(light) {
 				api.setLightState(light.id, off);
+			});
 			}, 10*60*1000);
 			stateOn = false;
 		}
