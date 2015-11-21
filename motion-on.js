@@ -5,46 +5,76 @@ var particle = require('./lib-particle');
 var lightState = hue.lightState;
 var _ = require('underscore');
 
-var lights = [
-	_.findWhere(constants.lights, {name: 'bookshelf'}),
-	_.findWhere(constants.lights, {name: 'desk-lamp'})
-	];
+var main = function() {
 
-var firstOn = lightState.create().on(true).hsb(250, 100, 0);
-var on = lightState.create().on(true).hsb(50, 50, 100).transition(3000);
-var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
-var off = lightState.create().on(false);
+	if (process.argv.length < 3) {
+		usage();
+		process.exit(0);
+	}
 
-var timerID = 0;
-var stateOn = true;
+	var lights = lightsFromNames(process.argv.slice(2));
 
-setInterval(function() {
-	particle.getMotion()
-	.then(function(reply) {
-		if (reply.result !== 0 && stateOn === false) {
-			clearTimeout(timerID);
-			_.each(lights, function(light) {
-				api.setLightState(light.id, firstOn);
-			});
-			stateOn = true;
-		}
-		if (reply.result !== 0 && stateOn === true) {
-			_.each(lights, function(light) {
-				api.setLightState(light.id, on);
-			});
-		}
-		if (reply.result === 0 && stateOn === true) {
-			_.each(lights, function(light) {
-				api.setLightState(light.id, low);
-			});
-			timerID = setTimeout(function() {
+	var firstOn = lightState.create().on(true).hsb(250, 100, 0);
+	var on = lightState.create().on(true).hsb(50, 50, 100).transition(3000);
+	var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
+	var off = lightState.create().on(false);
+
+	var timerID = 0;
+	var stateOn = true;
+
+	setInterval(function() {
+		particle.getMotion()
+		.then(function(reply) {
+			if (reply.result !== 0 && stateOn === false) {
+				clearTimeout(timerID);
 				_.each(lights, function(light) {
-				api.setLightState(light.id, off);
-			});
-			}, 10*60*1000);
-			stateOn = false;
+					api.setLightState(light.id, firstOn);
+				});
+				stateOn = true;
+			}
+			if (reply.result !== 0 && stateOn === true) {
+				_.each(lights, function(light) {
+					api.setLightState(light.id, on);
+				});
+			}
+			if (reply.result === 0 && stateOn === true) {
+				_.each(lights, function(light) {
+					api.setLightState(light.id, low);
+				});
+				timerID = setTimeout(function() {
+					_.each(lights, function(light) {
+					api.setLightState(light.id, off);
+				});
+				}, 10*60*1000);
+				stateOn = false;
+			}
+		})
+	}, 1000);
+}
+
+var usage = function() {
+	console.log("usage: node " + __filename + " LIGHTNAME LIGHTNAME ...");
+	console.log("Each LIGHTNAME is the name of a light defined in constants.js:");
+	var lightNames = _.pluck(constants.lights, 'name').join(", ");
+	console.log('"' + lightNames + '"');
+}
+
+var lightsFromNames = function(nameStrings) {
+	var lights = _.map(nameStrings, function(nameString) {
+		var light = _.findWhere(constants.lights, {name: nameString});
+		if (light === undefined) {
+			console.log("Couldn't find a light named " + nameString + " in constants.js");
+			console.log("Available light names are:");
+			var lightNames = _.pluck(constants.lights, 'name').join(", ");
+			console.log('"' + lightNames + '"');
+			process.exit(0);
 		}
-	})
-}, 1000);
+		return light;
+	}); 
+
+	return lights;
+}
+
+main();
 
 
