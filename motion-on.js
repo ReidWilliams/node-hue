@@ -14,10 +14,10 @@ var main = function() {
 		process.exit(0);
 	}
 
-	var lights = lightName.lightsFromNames(process.argv.slice(2));
+	var lights = lightName.lightsFromNamesOrExit(process.argv.slice(2));
 
 	var firstOn = lightState.create().on(true).hsb(100, 30, 0);
-	var on = lightState.create().on(true).hsb(100, 30, 50).transition(3000);
+	var on = lightState.create().on(true).white(275, 50).transition(3000);
 	var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
 	var off = lightState.create().on(false);
 
