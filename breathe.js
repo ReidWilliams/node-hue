@@ -3,7 +3,7 @@ var constants = require('./constants');
 var api = new hue.HueApi(constants.ip, constants.username);
 var lightState = hue.lightState;
 var _ = require('underscore');
-var helpers = require('./lib-hue');
+var helpers = require('./lib/hue');
 var colors = require('./colors');
 
 

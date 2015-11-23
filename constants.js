@@ -2,6 +2,10 @@
 
 exports.lights = [
 	{
+		name: 'bedroom',
+		id: 2
+	},
+	{
 		name: 'bookshelf',
 		id: 3
 	},

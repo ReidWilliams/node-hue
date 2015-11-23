@@ -1,9 +1,11 @@
 var hue = require("node-hue-api");
 var constants = require('./constants');
 var api = new hue.HueApi(constants.ip, constants.username);
-var particle = require('./lib-particle');
+var particle = require('./lib/Particle');
 var lightState = hue.lightState;
 var _ = require('underscore');
+var huelib = require('./lib/Hue');
+var lightName = require('./lib/LightName');
 
 var main = function() {
 
@@ -12,10 +14,10 @@ var main = function() {
 		process.exit(0);
 	}
 
-	var lights = lightsFromNames(process.argv.slice(2));
+	var lights = lightName.lightsFromNames(process.argv.slice(2));
 
-	var firstOn = lightState.create().on(true).hsb(250, 100, 0);
-	var on = lightState.create().on(true).hsb(50, 50, 100).transition(3000);
+	var firstOn = lightState.create().on(true).hsb(100, 30, 0);
+	var on = lightState.create().on(true).hsb(100, 30, 50).transition(3000);
 	var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
 	var off = lightState.create().on(false);
 
@@ -57,22 +59,6 @@ var usage = function() {
 	console.log("Each LIGHTNAME is the name of a light defined in constants.js:");
 	var lightNames = _.pluck(constants.lights, 'name').join(", ");
 	console.log('"' + lightNames + '"');
-}
-
-var lightsFromNames = function(nameStrings) {
-	var lights = _.map(nameStrings, function(nameString) {
-		var light = _.findWhere(constants.lights, {name: nameString});
-		if (light === undefined) {
-			console.log("Couldn't find a light named " + nameString + " in constants.js");
-			console.log("Available light names are:");
-			var lightNames = _.pluck(constants.lights, 'name').join(", ");
-			console.log('"' + lightNames + '"');
-			process.exit(0);
-		}
-		return light;
-	}); 
-
-	return lights;
 }
 
 main();
