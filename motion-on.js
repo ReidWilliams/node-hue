@@ -16,8 +16,6 @@ var main = function() {
 	}
 
 	var lights = lightName.lightsFromNamesOrExit(process.argv.slice(2));
-
-	var firstOn = lightState.create().on(true).hsb(100, 30, 0);
 	var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
 	var off = lightState.create().on(false);
 
@@ -29,13 +27,15 @@ var main = function() {
 		.then(function(reply) {
 			if (reply.result !== 0 && stateOn === false) {
 				clearTimeout(timerID);
-				_.each(lights, function(light) {
-					api.setLightState(light.id, firstOn);
+				getInitialColor().then(function(initColor) {
+					_.each(lights, function(light) {
+						api.setLightState(light.id, initColor);
+					});
 				});
 				stateOn = true;
 			}
 			if (reply.result !== 0 && stateOn === true) {
-				getOnColor().then(function(onColor) {
+				getFinalOnColor().then(function(onColor) {
 					_.each(lights, function(light) {
 						api.setLightState(light.id, onColor);
 					});
@@ -63,11 +63,30 @@ var usage = function() {
 	console.log('"' + lightNames + '"');
 }
 
-var getOnColor = function() {
+// with motion light turned on to this color
+var getInitialOnColor = function() {
 	var promise = new Promise(function(resolve, reject) {
 		seneca.act('role: color, cmd: get-current', function(err, result) {
 			if (err) return console.error(err)
-			debugger;
+			var color = undefined;
+			if (result.colortemp !== undefined) {
+				color = lightState.create().on(true).white(result.colortemp, 30);
+			}
+
+			if (result.hue !== undefined) {
+				color = lightState.create().on(true).hsb(result.hue, result.saturation, 30);
+			}
+			resolve(color);
+		});	
+	});
+	return promise;
+}
+
+// light transitions to this color
+var getFinalOnColor = function() {
+	var promise = new Promise(function(resolve, reject) {
+		seneca.act('role: color, cmd: get-current', function(err, result) {
+			if (err) return console.error(err)
 			var color = undefined;
 			if (result.colortemp !== undefined) {
 				color = lightState.create().on(true).white(result.colortemp, result.brightness).transition(3000);;
