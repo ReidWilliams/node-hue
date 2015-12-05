@@ -70,11 +70,11 @@ var getOnColor = function() {
 			debugger;
 			var color = undefined;
 			if (result.colortemp !== undefined) {
-				color = lightState.create().on(true).white(result.colortemp, result.brightness);
+				color = lightState.create().on(true).white(result.colortemp, result.brightness).transition(3000);;
 			}
 
 			if (result.hue !== undefined) {
-				color = lightState.create().on(true).hsb(result.hue, result.saturation, result.brightness);
+				color = lightState.create().on(true).hsb(result.hue, result.saturation, result.brightness).transition(3000);;
 			}
 			resolve(color);
 		});	
