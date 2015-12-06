@@ -27,7 +27,7 @@ var main = function() {
 		.then(function(reply) {
 			if (reply.result !== 0 && stateOn === false) {
 				clearTimeout(timerID);
-				getInitialColor().then(function(initColor) {
+				getInitialOnColor().then(function(initColor) {
 					_.each(lights, function(light) {
 						api.setLightState(light.id, initColor);
 					});
