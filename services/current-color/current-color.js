@@ -39,7 +39,7 @@ var getColorByDaylight = function() {
 	if (hour < 16) {
 		return {
 			colortemp: 154, // coolest white
-			brightness: 50 	// 50%
+			brightness: 30 	// 30%
 		};
 	}
 
@@ -52,9 +52,9 @@ var getColorByDaylight = function() {
 		});
 		var brightness = interpolate(hour, {
 			hour1: 16,
-			value1: 50,
+			value1: 30,
 			hour2: 18,
-			value2: 100  
+			value2: 75  
 		});
 		return {colortemp: colortemp, brightness: brightness};
 	}
@@ -66,7 +66,7 @@ var getColorByDaylight = function() {
 			hour2: 23,
 			value2: 500  
 		});
-		var brightness = 100;
+		var brightness = 75;
 		return {colortemp: colortemp, brightness: brightness};
 	}
 
