@@ -7,6 +7,7 @@ var _ = require('underscore');
 var huelib = require('./lib/Hue');
 var lightName = require('./lib/LightName');
 var seneca = require('seneca')().client();
+var moment = require('moment');
 
 var main = function() {
 
@@ -19,14 +20,14 @@ var main = function() {
 	var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
 	var off = lightState.create().on(false);
 
-	var timerID = 0;
 	var stateOn = true;
+	var momentMotionStopped = moment();
 
 	setInterval(function() {
 		particle.getMotion()
-		.then(function(reply) {
-			if (reply.result !== 0 && stateOn === false) {
-				clearTimeout(timerID);
+		.then(function(motion) {
+			// motion is true for first time
+			if (motion.result !== 0 && stateOn === false) {
 				getInitialOnColor().then(function(initColor) {
 					_.each(lights, function(light) {
 						api.setLightState(light.id, initColor);
@@ -34,23 +35,30 @@ var main = function() {
 				});
 				stateOn = true;
 			}
-			if (reply.result !== 0 && stateOn === true) {
+			// motion is true second time and later
+			if (motion.result !== 0 && stateOn === true) {
 				getFinalOnColor().then(function(onColor) {
 					_.each(lights, function(light) {
 						api.setLightState(light.id, onColor);
 					});
 				});
 			}
-			if (reply.result === 0 && stateOn === true) {
+			// motions is false first time
+			if (motion.result === 0 && stateOn === true) {
 				_.each(lights, function(light) {
 					api.setLightState(light.id, low);
 				});
-				timerID = setTimeout(function() {
-					_.each(lights, function(light) {
-					api.setLightState(light.id, off);
-				});
-				}, 10*60*1000);
 				stateOn = false;
+				momentMotionStopped = moment();
+			}
+			// any time motion is false
+			if (motion.result === 0) {
+				var now = moment();
+				if (now - momentMotionStopped > 1*60*1000) {
+					_.each(lights, function(light) {
+						api.setLightState(light.id, off);
+					});	
+				}
 			}
 		})
 	}, 1000);
