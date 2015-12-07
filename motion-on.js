@@ -54,7 +54,7 @@ var main = function() {
 			// any time motion is false
 			if (motion.result === 0) {
 				var now = moment();
-				if (now - momentMotionStopped > 1*60*1000) {
+				if (now - momentMotionStopped > 10*60*1000) {
 					_.each(lights, function(light) {
 						api.setLightState(light.id, off);
 					});	
