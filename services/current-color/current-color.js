@@ -50,13 +50,13 @@ var getColorByDaylight = function() {
 		var colortemp = interpolate(hour, {
 			hour1: 16,
 			value1: 154,
-			hour2: 23,
+			hour2: 19,
 			value2: 500  
 		});
 		var brightness = interpolate(hour, {
 			hour1: 16,
 			value1: 30,
-			hour2: 18,
+			hour2: 19,
 			value2: 50  
 		});
 		return {colortemp: colortemp, brightness: brightness};
