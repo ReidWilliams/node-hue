@@ -29,6 +29,7 @@ var CurrentColor = function ( options ) {
 var getColorByDaylight = function() {
 	var hour = moment().hour() + (moment().minute() / 60);
 	
+	// early morning until 7am
 	if (hour < 7) {
 		return {
 			colortemp: 500, // coolest white
@@ -36,6 +37,7 @@ var getColorByDaylight = function() {
 		};
 	}
 
+	// daytime until 4pm
 	if (hour < 16) {
 		return {
 			colortemp: 154, // coolest white
@@ -43,6 +45,7 @@ var getColorByDaylight = function() {
 		};
 	}
 
+	// late afternoon until 7pm
 	if (hour < 19) {
 		var colortemp = interpolate(hour, {
 			hour1: 16,
@@ -54,11 +57,12 @@ var getColorByDaylight = function() {
 			hour1: 16,
 			value1: 30,
 			hour2: 18,
-			value2: 75  
+			value2: 50  
 		});
 		return {colortemp: colortemp, brightness: brightness};
 	}
 
+	// evening until 11pm
 	if (hour < 23) {
 		var colortemp = interpolate(hour, {
 			hour1: 16,
@@ -66,8 +70,16 @@ var getColorByDaylight = function() {
 			hour2: 23,
 			value2: 500  
 		});
-		var brightness = 75;
+		var brightness = 50;
 		return {colortemp: colortemp, brightness: brightness};
+	}
+
+	// after 11pm
+	if (hour < 24) {
+		return {
+			colortemp: 500, // coolest white
+			brightness: 50 	// 50%
+		};
 	}
 
 	return {colortemp: 500, brightness: 100};
