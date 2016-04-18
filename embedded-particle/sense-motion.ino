@@ -33,7 +33,7 @@ the sticky pir state. This can be changed with a cloud exposed function (see bel
 // used by setTimer and isTimeUp functions
 bool tmrActive[] = {false, false, false, false};
 unsigned long tmrState[] = {0, 0, 0, 0};
-unsigned long tmrLengths[] = {50, 10*1000, 10*1000, 30*1000}; // length in ms of different timers
+unsigned long tmrLengths[] = {50, 60*1000, 60*1000, 30*1000}; // length in ms of different timers
 
 int lastPirRead = HIGH; // PIR_DEBOUNCE_TIMER is HIGH when it reads movement
 
