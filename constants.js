@@ -2,17 +2,9 @@
 
 exports.lights = [
 	{
-		name: 'bedroom',
-		id: 2
-	},
-	{
-		name: 'bookshelf',
-		id: 3
-	},
-	{
-		name: 'desk-lamp',
-		id: 5
+		name: 'office-desk',
+		id: 9
 	}];
 
-exports.ip = '192.168.100.2';
+exports.ip = '192.168.100.15';
 exports.username = '24f1532c2c510fef33c1930416a95b87';

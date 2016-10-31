@@ -1,3 +1,6 @@
+// Current version turns on office light when there's motion
+
+
 var hue = require("node-hue-api");
 var constants = require('./constants');
 var api = new hue.HueApi(constants.ip, constants.username);
@@ -6,6 +9,8 @@ var lightState = hue.lightState;
 var _ = require('underscore');
 var huelib = require('./lib/Hue');
 var lightName = require('./lib/LightName');
+
+const secondsLow = 60;
 
 var main = function() {
 
@@ -17,7 +22,7 @@ var main = function() {
 	var lights = lightName.lightsFromNamesOrExit(process.argv.slice(2));
 
 	var firstOn = lightState.create().on(true).hsb(100, 30, 0);
-	var on = lightState.create().on(true).white(275, 50).transition(3000);
+	var on = lightState.create().on(true).white(325, 100	).transition(3000);
 	var low = lightState.create().on(true).hsb(250, 100, 0).transition(10000);
 	var off = lightState.create().on(false);
 
@@ -47,7 +52,7 @@ var main = function() {
 					_.each(lights, function(light) {
 					api.setLightState(light.id, off);
 				});
-				}, 10*60*1000);
+				}, secondsLow*1000);
 				stateOn = false;
 			}
 		})
