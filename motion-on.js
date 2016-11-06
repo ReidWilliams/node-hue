@@ -6,6 +6,7 @@ const hue = require("node-hue-api");
 const constants = require('./constants');
 const api = new hue.HueApi(constants.ip, constants.username);
 const particle = require('./lib/Particle');
+const _ = require('underscore');
 const lightState = hue.lightState;
 const huelib = require('./lib/Hue');
 const lightName = require('./lib/LightName');
