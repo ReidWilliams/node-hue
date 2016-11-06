@@ -10,58 +10,34 @@ We're using digital out pins for power and ground because it's
 convenient and doesn't require any wiring.
 */
 
-const bool kDebugLED = false;
-// in debug mode the rgb led changes color with the pir signal
+const bool kDebugLED = true;
+// in debug mode the rgb led changes color to show motionState
 
 const int kGnd = D0;
 const int kPir = D1;
 const int kVcc = D2;
 
-//const int kOnboardLed = D7;
-
+// timer system built to accomodate multiple timers
+// though here only have one timer, the debounce timer
 // indices for timers
 const int PIR_DEBOUNCE_TIMER = 0;
-const int PIR_RED_YELLOW_DELAY_TIMER = 1;
-const int PIR_YELLOW_GREEN_DELAY_TIMER = 2;
-const int POST_TIMER = 3;
 
-bool debugMode = false;
-/* when this is true, the RGB led will show the immediate pir state not
-the sticky pir state. This can be changed with a cloud exposed function (see below)
-*/
+// used by setTimer and isTimeUp functions. Each of these arrays has
+// one item for each timer. I.e. lenght of arrays should be same
+// as number of timers.
+unsigned long tmrState[] = { 0 }; // ms since timer was started
+unsigned long tmrLengths[] = { 50 }; // length in ms of different timers
 
-// used by setTimer and isTimeUp functions
-bool tmrActive[] = {false, false, false, false};
-unsigned long tmrState[] = {0, 0, 0, 0};
-unsigned long tmrLengths[] = {50, 1, 60*1000, 30*1000}; // length in ms of different timers
+// this is debounced state read by cloud function
+int motionState = 0;
 
-int lastPirRead = HIGH; // PIR_DEBOUNCE_TIMER is HIGH when it reads movement
-
-int pirOccupied = LOW; // sticky state of pir sensor
-// logic is that pirOccupied is set HIGH whenever pirOccupied now is high. pirOcupied
-// only goes LOW when pirLive is low for a pre-determined amount of time.
-int pirLive = LOW; // state of pir sensor after debounce delay
-int lastPirOccupiedNow = LOW;
-
-const int OccupiedStatusAvailable = 0;
-const int OccupiedStatusMaybeAvailable = 1;
-const int OccupiedStatusOccupied = 2;
-int occupiedState = OccupiedStatusAvailable; // green,
-
+// tracks raw reads of PIR sensor before debouncing
+int pirRead = 0;
+int lastPirRead = 0;
 
 // set (or reset) a timer
 void setTimer(int index) {
     tmrState[index] = millis();
-    tmrActive[index] = true;
-}
-
-void clearTimer(int index) {
-  tmrState[index] = 0;
-  tmrActive[index] = false;
-}
-
-bool isTimerActive(int index) {
-  return tmrActive[index];
 }
 
 // has the timer exceeded it's limit?
@@ -69,120 +45,61 @@ bool isTimeUp(int index) {
     return (millis() - tmrState[index] >= tmrLengths[index]);
 }
 
-/* 
-if mode is anything other than "", puts the core
-into debug mode. Core funtions the same, except
-rgb LED is activated and tells the immediate state
-of the pir rather than the sticky state.
-*/
-int setDebugMode(String mode) {
-  if(mode != "") {
-    debugMode = true;
-  } else {
-    debugMode = false;
-  }
-  return 0;
-}
-
 void setup() {
     pinMode(kGnd, OUTPUT);
     digitalWrite(kGnd, LOW);
-    
     pinMode(kVcc, OUTPUT);
     digitalWrite(kVcc, HIGH);
-
     pinMode(kPir, INPUT_PULLDOWN);
-    //pinMode(kOnboardLed, OUTPUT);
-    Particle.variable("pirThere", &occupiedState, INT);
-    setTimer(POST_TIMER);
-    RGB.control(true);
 
-    Particle.function("setDebugMode", setDebugMode);
+    Particle.function("getMotion", getMotion);
+
+    RGB.control(true);
 }
 
 void updateDisplay() {
-  bool showGreen;
-  if(debugMode == true) {
-    // led shows immediate pir status
-    showGreen = (pirLive == LOW);
-  } else if (kDebugLED == true) {
-    showGreen = (occupiedState == OccupiedStatusAvailable);
-  } else {
-    RGB.color(0, 0, 0);
-  }
-
-  if(kDebugLED || debugMode) {
-    if(showGreen) {
-      RGB.color(0, 255, 0);
-    } else {
+  if (kDebugLED) {
+    if (motionState) {
       RGB.color(255, 0, 0);
+    } else {
+      RGB.color(0, 255, 0);
     }
   } else {
     RGB.color(0, 0, 0);
   }
 }
 
-void updatePirLive() {
+// debounce raw pin input by ensuring pin stays in new state for
+// minimum time before settting motionState
+void updateMotionState() {
   // pir debounce code
   int pirRead = digitalRead(kPir);
 
   if(pirRead != lastPirRead) { // pir read changed
-      setTimer(PIR_DEBOUNCE_TIMER); // start a timer
+    setTimer(PIR_DEBOUNCE_TIMER); // start a timer
   }
   lastPirRead = pirRead;
 
   if(isTimeUp(PIR_DEBOUNCE_TIMER)) {
-      // we have the same readstate for awhile now.
-      pirLive = pirRead;
-  }
-}
-
-void updateOccupiedState() {
-  if (pirLive == HIGH) {
-    occupiedState = OccupiedStatusOccupied;
-    // invalidate timers
-    clearTimer(PIR_RED_YELLOW_DELAY_TIMER);
-    clearTimer(PIR_YELLOW_GREEN_DELAY_TIMER);
-  } else {
-
-    if (pirLive == LOW && occupiedState == OccupiedStatusOccupied) {
-      if(!isTimerActive(PIR_RED_YELLOW_DELAY_TIMER)) {
-        setTimer(PIR_RED_YELLOW_DELAY_TIMER);
-      } else {
-        if (isTimeUp(PIR_RED_YELLOW_DELAY_TIMER)) {
-          // go from red to yellow
-          occupiedState = OccupiedStatusMaybeAvailable;
-          clearTimer(PIR_RED_YELLOW_DELAY_TIMER);
-          setTimer(PIR_YELLOW_GREEN_DELAY_TIMER);
-        }
-      }
-    } else if (pirLive == LOW && occupiedState == OccupiedStatusMaybeAvailable) {
-      if (!isTimerActive(PIR_YELLOW_GREEN_DELAY_TIMER)) {
-        setTimer(PIR_YELLOW_GREEN_DELAY_TIMER);
-      } else {
-        if (isTimeUp(PIR_YELLOW_GREEN_DELAY_TIMER)) {
-          // go from yellow to green
-          occupiedState = OccupiedStatusAvailable;
-          clearTimer(PIR_YELLOW_GREEN_DELAY_TIMER);
-        }
-      }
+    // we have the same readstate for awhile now.
+    // only set motionState to 1 if pirState has been 1
+    // for awhile. Never set motionState to 0 in this function.
+    // Motion state is sticky to 1. 
+    // Reading motionState from a cloud function, sets it to 0.
+    if (pirRead == 1) {
+      motionState = 1;
     }
   }
 }
 
-void publishEvents() {
-  // post to api timer
-  if (isTimeUp(POST_TIMER)) {
-      /*Spark.publish("pirThere", String(pirOccupied));
-      Spark.publish("pirThereNow", String(pirLive));*/
-      // Spark.publish("occupiedState", String(occupiedState));
-      setTimer(POST_TIMER);
-  }
+// function to get motion state, exposed to cloud
+int getMotion(String unused) {
+  int localMotionState = motionState;
+  motionState = 0;
+  return localMotionState;
 }
 
 void loop() {
     updateDisplay();
-    updatePirLive(); // debounce pir pin input
-    updateOccupiedState();
-    publishEvents();
+    updateMotionState();
 }
