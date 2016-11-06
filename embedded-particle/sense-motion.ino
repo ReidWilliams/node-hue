@@ -10,7 +10,7 @@ We're using digital out pins for power and ground because it's
 convenient and doesn't require any wiring.
 */
 
-const bool kDebugLED = true;
+const bool kDebugLED = false;
 // in debug mode the rgb led changes color to show motionState
 
 const int kGnd = D0;
