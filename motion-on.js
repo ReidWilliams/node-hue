@@ -3,6 +3,7 @@
 // light is on the more often it is turned on.
 
 const hue = require("node-hue-api")
+const debug = require('debug')('hue')
 const moment = require("moment")
 const constants = require('./constants')
 const api = new hue.HueApi(constants.ip, constants.username)
@@ -21,8 +22,8 @@ let motionSticky = false
 
 // called whenever motion is seen
 const onMotion = function() {
-	console.log(`saw motion`)
-	console.log(`setting light timer to ${getLightInterval()} seconds`)
+	debug(`saw motion`)
+	debug(`setting light timer to ${getLightInterval()} seconds`)
 	motionSticky = true
 	turnLightsOn()
 	clearTimeout(lightTimerHandle)
@@ -32,26 +33,26 @@ const onMotion = function() {
 	// set twice as long as light is on, so that user can wave to turn light on
 	// when it goes off, and process is still sensing
 	if (!senseTimerHandle) {
-		console.log(`setting sense timer to ${getLightInterval() *2} seconds`)
+		debug(`setting sense timer to ${getLightInterval() *2} seconds`)
 		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 2 * 1000)
 	}
 }
 
 const senseTimerExpired = function() {
-	console.log(`sense timer expired`)
+	debug(`sense timer expired`)
 	senseTimerHandle = null
 	if (motionSticky) {
-		console.log(`there was motion during sense period`)
+		debug(`there was motion during sense period`)
 		motionSticky = false
 		increaseLightInterval()
 		// set timer again and wait another sense interval
-		console.log(`setting sense timer for ${getLightInterval() * 2} seconds`)
+		debug(`setting sense timer for ${getLightInterval() * 2} seconds`)
 		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 2 * 1000)
 	} else {
 		// no motion in last sense interval
 		// set sense interval back to default and turn lights off
 		resetLightInterval()
-		console.log(`no motion in sense interval, light interval is now ${getLightInterval()} seconds`)
+		debug(`no motion in sense interval, light interval is now ${getLightInterval()} seconds`)
 	}
 }
 
@@ -100,7 +101,7 @@ const turnLightsOn = function() {
 
 const turnLightsOff = function() {
 	if (_lightState === 'on' || _lightState === 'lowOn') {
-		console.log(`turning lights off`)
+		debug(`turning lights off`)
 		clearTimeout(lightTimer)
 		setLights(lights, lowOff)
 		_lightState = 'lowOff'
@@ -128,7 +129,7 @@ const main = function() {
 		process.exit(0)
 	}
 
-	console.log(`starting`)
+	debug(`starting`)
 	lights = lightName.lightsFromNamesOrExit(process.argv.slice(2))
 	setLights(lights, off)
 
@@ -144,20 +145,20 @@ const main = function() {
 				}
 			})
 			.catch(function(err) {
-				console.log(`Caught error: ${err}`)
+				debug(`Caught error: ${err}`)
 				particleCallInProgress = false
 			})
 		} else {
-			console.log(`particleCallInProgress is true`)
+			debug(`particleCallInProgress is true`)
 		}
 	}, 1000)
 }
 
 const usage = function() {
-	console.log("usage: node " + __filename + " LIGHTNAME LIGHTNAME ...")
-	console.log("Each LIGHTNAME is the name of a light defined in constants.js:")
+	debug("usage: node " + __filename + " LIGHTNAME LIGHTNAME ...")
+	debug("Each LIGHTNAME is the name of a light defined in constants.js:")
 	var lightNames = _.pluck(constants.lights, 'name').join(", ")
-	console.log('"' + lightNames + '"')
+	debug('"' + lightNames + '"')
 }
 
 main()
