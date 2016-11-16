@@ -147,6 +147,8 @@ const main = function() {
 				console.log(`Caught error: ${err}`)
 				particleCallInProgress = false
 			})
+		} else {
+			console.log(`particleCallInProgress is true`)
 		}
 	}, 1000)
 }
