@@ -123,6 +123,19 @@ const isDaytime = function() {
 	return (h > 7 && h < 17)
 }
 
+const loop = function() {
+	particle.getMotion()
+	.then(function(reply) {
+		if (reply.return_value !== 0) {
+			onMotion()
+		}
+		setTimeout(loop, 1000)
+	}).catch(function(err) {
+		debug(`Caught error: ${err}`)
+		setTimeout(loop, 10000)
+	})
+}
+
 const main = function() {
 	if (process.argv.length < 3) {
 		usage()
@@ -132,26 +145,7 @@ const main = function() {
 	debug(`starting`)
 	lights = lightName.lightsFromNamesOrExit(process.argv.slice(2))
 	setLights(lights, off)
-
-	let particleCallInProgress = false
-	setInterval(function() {
-		if (!particleCallInProgress) {
-			particleCallInProgress = true
-			particle.getMotion()
-			.then(function(reply) {
-				particleCallInProgress = false
-				if (reply.return_value !== 0) {
-					onMotion()
-				}
-			})
-			.catch(function(err) {
-				debug(`Caught error: ${err}`)
-				particleCallInProgress = false
-			})
-		} else {
-			debug(`particleCallInProgress is true`)
-		}
-	}, 1000)
+	loop()
 }
 
 const usage = function() {
