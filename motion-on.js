@@ -3,7 +3,6 @@
 // light is on the more often it is turned on.
 
 const hue = require("node-hue-api")
-const debug = require('debug')('hue')
 const moment = require("moment")
 const constants = require('./constants')
 const api = new hue.HueApi(constants.ip, constants.username)
@@ -12,6 +11,8 @@ const _ = require('underscore')
 const lightState = hue.lightState
 const huelib = require('./lib/Hue')
 const lightName = require('./lib/LightName')
+
+const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}   ${m}`) }
 
 const lightIntervals = [10, 20, 60, 5*60, 10*60, 15*60] // seconds
 let lightIntervalIndex = 0
