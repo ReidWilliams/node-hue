@@ -14,7 +14,7 @@ const lightName = require('./lib/LightName')
 
 const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}   ${m}`) }
 
-const lightIntervals = [10, 20, 60, 5*60, 10*60, 15*60] // seconds
+const lightIntervals = [10, 60, 5*60, 10*60, 15*60] // seconds
 let lightIntervalIndex = 0
 
 let senseTimerHandle = null
