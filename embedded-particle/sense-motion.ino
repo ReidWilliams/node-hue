@@ -10,40 +10,23 @@ We're using digital out pins for power and ground because it's
 convenient and doesn't require any wiring.
 */
 
-const bool kDebugLED = false;
+const bool kDebugLED = true;
 // in debug mode the rgb led changes color to show motionState
 
 const int kGnd = D0;
 const int kPir = D1;
 const int kVcc = D2;
 
-// timer system built to accomodate multiple timers
-// though here only have one timer, the debounce timer
-// indices for timers
-const int PIR_DEBOUNCE_TIMER = 0;
+// tracks how many PIR reads have been high in a row
+const int reallyOnThreshold = 180;
+const int onThreshold = 20;
+int highReads = 0;
 
-// used by setTimer and isTimeUp functions. Each of these arrays has
-// one item for each timer. I.e. lenght of arrays should be same
-// as number of timers.
-unsigned long tmrState[] = { 0 }; // ms since timer was started
-unsigned long tmrLengths[] = { 50 }; // length in ms of different timers
-
-// this is debounced state read by cloud function
+// 0 is off, 1 is motion, 2 is waving motion
 int motionState = 0;
-
-// tracks raw reads of PIR sensor before debouncing
-int pirRead = 0;
-int lastPirRead = 0;
-
-// set (or reset) a timer
-void setTimer(int index) {
-    tmrState[index] = millis();
-}
-
-// has the timer exceeded it's limit?
-bool isTimeUp(int index) {
-    return (millis() - tmrState[index] >= tmrLengths[index]);
-}
+const int NO_MOTION = 0;
+const int MOTION = 1;
+const int HIGH_MOTION = 2;
 
 void setup() {
     pinMode(kGnd, OUTPUT);
@@ -55,51 +38,54 @@ void setup() {
     Particle.function("getMotion", getMotion);
 
     RGB.control(true);
+
+    Serial.begin(9600);
 }
 
 void updateDisplay() {
   if (kDebugLED) {
-    if (motionState) {
-      RGB.color(255, 0, 0);
+    if (motionState == HIGH_MOTION) {
+      RGB.color(0, 0, 255);
     } else {
-      RGB.color(0, 255, 0);
+      int b = (int) (((float)highReads / (float)reallyOnThreshold) * 255);
+      RGB.color(b, 0, 0);
     }
   } else {
     RGB.color(0, 0, 0);
   }
 }
 
-// debounce raw pin input by ensuring pin stays in new state for
-// minimum time before settting motionState
 void updateMotionState() {
-  // pir debounce code
-  int pirRead = digitalRead(kPir);
-
-  if(pirRead != lastPirRead) { // pir read changed
-    setTimer(PIR_DEBOUNCE_TIMER); // start a timer
+  int read = digitalRead(kPir);
+  if (read == HIGH) {
+    highReads = min(highReads + 1, reallyOnThreshold);
+  } else {
+    highReads = max(highReads - 3, 0);
   }
-  lastPirRead = pirRead;
 
-  if(isTimeUp(PIR_DEBOUNCE_TIMER)) {
-    // we have the same readstate for awhile now.
-    // only set motionState to 1 if pirState has been 1
-    // for awhile. Never set motionState to 0 in this function.
-    // Motion state is sticky to 1. 
-    // Reading motionState from a cloud function, sets it to 0.
-    if (pirRead == 1) {
-      motionState = 1;
-    }
+  Serial.println(String(highReads));
+
+  if (highReads >= onThreshold) {
+    motionState = MOTION;
+    return;
   }
+
+  if (highReads >= reallyOnThreshold) {
+    motionState = HIGH_MOTION;
+    return;
+  }
+
 }
 
 // function to get motion state, exposed to cloud
 int getMotion(String unused) {
   int localMotionState = motionState;
-  motionState = 0;
+  motionState = NO_MOTION;
   return localMotionState;
 }
 
 void loop() {
+    delay(50);
     updateDisplay();
     updateMotionState();
 }

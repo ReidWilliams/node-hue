@@ -14,7 +14,7 @@ const lightName = require('./lib/LightName')
 
 const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}   ${m}`) }
 
-const lightIntervals = [10, 60, 5*60, 10*60, 15*60] // seconds
+const lightIntervals = [10, 60, 5*60, 5*60, 10*60] // seconds
 let lightIntervalIndex = 0
 
 let senseTimerHandle = null
@@ -37,6 +37,11 @@ const onMotion = function() {
 		debug(`setting sense timer to ${getLightInterval() *2} seconds`)
 		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 2 * 1000)
 	}
+}
+
+const onHighMotion = function() {
+	debug(`saw lots of motion, setting interval to max`)
+	lightIntervalIndex = lightIntervals.length - 1
 }
 
 const senseTimerExpired = function() {
@@ -62,7 +67,8 @@ const getLightInterval = function() {
 }
 
 const increaseLightInterval = function() {
-	lightIntervalIndex = Math.min(lightIntervalIndex + 1, lightIntervals.length)
+	// don't increase past length of array
+	lightIntervalIndex = Math.min(lightIntervalIndex + 1, lightIntervals.length - 1)
 }
 
 const resetLightInterval = function() {
@@ -127,7 +133,10 @@ const isDaytime = function() {
 const loop = function() {
 	particle.getMotion()
 	.then(function(reply) {
-		if (reply.return_value !== 0) {
+		if (reply.return_value === 1) {
+			onMotion()
+		} else if (reply.return_value === 2) {
+			onHighMotion()
 			onMotion()
 		}
 		setTimeout(loop, 1000)
