@@ -34,8 +34,8 @@ const onMotion = function() {
 	// set twice as long as light is on, so that user can wave to turn light on
 	// when it goes off, and process is still sensing
 	if (!senseTimerHandle) {
-		debug(`setting sense timer to ${getLightInterval() *2} seconds`)
-		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 2 * 1000)
+		debug(`setting sense timer to ${getLightInterval()} seconds`)
+		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 1000)
 	}
 }
 
@@ -52,8 +52,8 @@ const senseTimerExpired = function() {
 		motionSticky = false
 		increaseLightInterval()
 		// set timer again and wait another sense interval
-		debug(`setting sense timer for ${getLightInterval() * 2} seconds`)
-		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 2 * 1000)
+		debug(`setting sense timer for ${getLightInterval()} seconds`)
+		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 1000)
 	} else {
 		// no motion in last sense interval
 		// set sense interval back to default and turn lights off
