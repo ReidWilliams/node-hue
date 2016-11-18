@@ -77,7 +77,7 @@ const resetLightInterval = function() {
 
 // turn light to low on then fade to on. Turn light to low off, then fade to off
 var lights = null // set by main from argv
-const lowOn = lightState.create().on(true).hsb(100, 30, 0)
+const lowOn = lightState.create().on(true).hsb(250, 100, 0)
 const on = lightState.create().on(true).white(325, 100	).transition(3000)
 const lowOff = lightState.create().on(true).hsb(250, 100, 0).transition(10000)
 const off = lightState.create().on(false)
