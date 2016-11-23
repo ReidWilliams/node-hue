@@ -19,7 +19,8 @@ const int kVcc = D2;
 
 // tracks how many PIR reads have been high in a row
 const int reallyOnThreshold = 180;
-const int onThreshold = 10;
+// 10 is too sensitive
+const int onThreshold = 20;
 int highReads = 0;
 
 // 0 is off, 1 is motion, 2 is waving motion
