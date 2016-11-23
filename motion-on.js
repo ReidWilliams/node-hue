@@ -14,7 +14,8 @@ const lightName = require('./lib/LightName')
 
 const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}   ${m}`) }
 
-const lightIntervals = [10, 10, 10, 5*60, 5*60, 10*60] // seconds
+const lightIntervals = [10, 10, 10, 5*60,  5*60,  10*60] // seconds
+const senseIntervals = [60, 60, 60, 10*60, 10*60, 10*60]
 let lightIntervalIndex = 0
 
 let senseTimerHandle = null
@@ -34,8 +35,8 @@ const onMotion = function() {
 	// set twice as long as light is on, so that user can wave to turn light on
 	// when it goes off, and process is still sensing
 	if (!senseTimerHandle) {
-		debug(`setting sense timer to ${getLightInterval()} seconds`)
-		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 1000)
+		debug(`setting sense timer to ${getSenseInterval()} seconds`)
+		senseTimerHandle = setTimeout(senseTimerExpired, getSenseInterval() * 1000)
 	}
 }
 
@@ -52,8 +53,8 @@ const senseTimerExpired = function() {
 		motionSticky = false
 		increaseLightInterval()
 		// set timer again and wait another sense interval
-		debug(`setting sense timer for ${getLightInterval()} seconds`)
-		senseTimerHandle = setTimeout(senseTimerExpired, getLightInterval() * 1000)
+		debug(`setting sense timer for ${getSenseInterval()} seconds`)
+		senseTimerHandle = setTimeout(senseTimerExpired, getSenseInterval() * 1000)
 	} else {
 		// no motion in last sense interval
 		// set sense interval back to default and turn lights off
@@ -64,6 +65,10 @@ const senseTimerExpired = function() {
 
 const getLightInterval = function() {
 	return lightIntervals[lightIntervalIndex]
+}
+
+const getSenseInterval = function() {
+	return senseIntervals[lightIntervalIndex]
 }
 
 const increaseLightInterval = function() {
