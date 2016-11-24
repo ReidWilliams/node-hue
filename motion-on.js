@@ -12,7 +12,7 @@ const lightState = hue.lightState
 const huelib = require('./lib/Hue')
 const lightName = require('./lib/LightName')
 
-const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}   ${m}`) }
+const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}     ${m}`) }
 
 const lightIntervals = [10, 60, 5*60, 30*60 ] // seconds
 const senseIntervals = [10, 60, 5*60, 30*60 ]
@@ -24,8 +24,7 @@ let motionSticky = false
 
 // called whenever motion is seen
 const onMotion = function() {
-	debug(`saw motion`)
-	debug(`setting light timer to ${getLightInterval()} seconds`)
+	debug(`.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  MOTION`)
 	motionSticky = true
 	turnLightsOn()
 	clearTimeout(lightTimerHandle)
@@ -35,8 +34,11 @@ const onMotion = function() {
 	// set twice as long as light is on, so that user can wave to turn light on
 	// when it goes off, and process is still sensing
 	if (!senseTimerHandle) {
-		debug(`setting sense timer to ${getSenseInterval()} seconds`)
 		senseTimerHandle = setTimeout(senseTimerExpired, getSenseInterval() * 1000)
+		debug(`LIGHT set (${getLightInterval()} s)`)
+		debug(`                     SENSE set (${getSenseInterval()} s)`)
+	} else {
+		debug(`LIGHT set (${getLightInterval()} s)`)
 	}
 }
 
@@ -46,20 +48,18 @@ const onHighMotion = function() {
 }
 
 const senseTimerExpired = function() {
-	debug(`sense timer expired`)
+	debug(`                     SENSE expired`)
 	senseTimerHandle = null
 	if (motionSticky) {
-		debug(`there was motion during sense period`)
 		motionSticky = false
 		increaseLightInterval()
 		// set timer again and wait another sense interval
-		debug(`setting sense timer for ${getSenseInterval()} seconds`)
+		debug(`                     SENSE set (${getSenseInterval()} s)`)
 		senseTimerHandle = setTimeout(senseTimerExpired, getSenseInterval() * 1000)
 	} else {
 		// no motion in last sense interval
 		// set sense interval back to default and turn lights off
 		resetLightInterval()
-		debug(`no motion in sense interval, light interval is now ${getLightInterval()} seconds`)
 	}
 }
 
@@ -80,6 +80,7 @@ const resetLightInterval = function() {
 	lightIntervalIndex = 0
 }
 
+// light controls
 // turn light to low on then fade to on. Turn light to low off, then fade to off
 var lights = null // set by main from argv
 const lowOn = lightState.create().on(true).hsb(250, 100, 0)
@@ -113,7 +114,7 @@ const turnLightsOn = function() {
 
 const turnLightsOff = function() {
 	if (_lightState === 'on' || _lightState === 'lowOn') {
-		debug(`turning lights off`)
+		debug(`LIGHT expired`)
 		clearTimeout(lightTimer)
 		setLights(lights, lowOff)
 		_lightState = 'lowOff'
