@@ -85,7 +85,7 @@ const resetLightInterval = function() {
 var lights = null // set by main from argv
 const lowOn = lightState.create().on(true).hsb(250, 100, 0)
 const on = lightState.create().on(true).white(325, 100	).transition(3000)
-const lowOff = lightState.create().on(true).hsb(250, 100, 0).transition(60000)
+const lowOff = lightState.create().on(true).hsb(250, 100, 0).transition(120000)
 const off = lightState.create().on(false)
 
 // used to transition between low on to on and low off to off states.
@@ -121,7 +121,7 @@ const turnLightsOff = function() {
 		lightTimer = setTimeout(function() {
 			setLights(lights, off)
 			_lightState = 'off'
-		}, 60000)
+		}, 120000)
 	} 
 }
 
