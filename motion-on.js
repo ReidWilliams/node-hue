@@ -121,7 +121,7 @@ const turnLightsOff = function() {
 		lightTimer = setTimeout(function() {
 			setLights(lights, off)
 			_lightState = 'off'
-		}, 10000)
+		}, 60000)
 	} 
 }
 
