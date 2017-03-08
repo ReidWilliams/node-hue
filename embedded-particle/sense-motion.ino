@@ -8,11 +8,31 @@ VDD pin connecting to D2
 
 We're using digital out pins for power and ground because it's
 convenient and doesn't require any wiring.
+
+This version also has a pushbutton switch. Pushing once or double
+pushing sets variables that are delieved to cloud calling code.
 */
+
+// switch variable declarations
+const int kSwitchVcc = D5;
+const int kSwitchGnd = D6;
+const int kSwitchSense = D7;
+
+const int debounceDelay = 50;
+const int doubleClickDelay = 500;
+
+int lastButtonStateChangeTime = 0;
+int lastButtonReleaseTime = 0;
+int buttonPresses = 0;
+// hold on to button presses until cleared by cloud function
+int buttonPressesForCloud = 0;
+bool lastButtonReading = false;
+bool buttonState = false;
 
 const bool kDebugLED = true;
 // in debug mode the rgb led changes color to show motionState
 
+// PIR sensor declarations
 const int kGnd = D0;
 const int kPir = D1;
 const int kVcc = D2;
@@ -36,12 +56,56 @@ void setup() {
     digitalWrite(kVcc, HIGH);
     pinMode(kPir, INPUT_PULLDOWN);
 
+    pinMode(kSwitchGnd, OUTPUT);
+    digitalWrite(kSwitchGnd, LOW);
+    pinMode(kSwitchVcc, OUTPUT);
+    digitalWrite(kSwitchVcc, HIGH);
+    pinMode(kSwitchSense, INPUT_PULLDOWN);
+
     Particle.function("getMotion", getMotion);
+    Particle.function("getButton", getButton);
     Particle.function("setMotion", setMotion);
 
     RGB.control(true);
 
-    Serial.begin(9600);
+    // Serial.begin(9600);
+}
+
+bool getButtonState() {
+  return digitalRead(kSwitchSense) == LOW;
+}
+
+void buttonLoop() {
+  int buttonReading = getButtonState();
+
+  // reset timer
+  if (buttonReading != lastButtonReading) {
+    lastButtonStateChangeTime = millis();
+  }
+  lastButtonReading = buttonReading;
+
+
+  if ((millis() - lastButtonStateChangeTime) > debounceDelay) {
+    // It's been debounceDelay and no button state changes
+    if (buttonReading != buttonState) {
+      // real (not bouncy) change to button state
+      buttonState = buttonReading;
+      if (!buttonReading) {
+        // button is off, so increase number of button presses by 1
+        // and set time of last button press
+        buttonPresses = buttonPresses + 1;
+        lastButtonReleaseTime = millis();
+      } 
+    }
+  }
+
+  if ((millis() - lastButtonReleaseTime) > doubleClickDelay) {
+    // time to wait for a second click is up
+    if (buttonPresses > 0) {
+      buttonPressesForCloud = buttonPresses;
+      buttonPresses = 0;
+    }
+  }
 }
 
 void updateDisplay() {
@@ -65,7 +129,7 @@ void updateMotionState() {
     highReads = max(highReads - 3, 0);
   }
 
-  Serial.println(String(highReads));
+  // Serial.println(String(highReads));
 
   if (highReads >= onThreshold) {
     motionState = MOTION;
@@ -92,8 +156,15 @@ int getMotion(String unused) {
   return localMotionState;
 }
 
+int getButton(String unused) {
+  int r = buttonPressesForCloud;
+  buttonPressesForCloud = 0;
+  return r;
+}
+
 void loop() {
     delay(50);
     updateDisplay();
     updateMotionState();
+    buttonLoop();
 }

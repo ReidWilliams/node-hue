@@ -22,8 +22,12 @@ let senseTimerHandle = null
 let lightTimerHandle = null
 let motionSticky = false
 
+// used to temporarily override motion
+let ignoreMotion = false
+
 // called whenever motion is seen
 const onMotion = function() {
+	if (ignoreMotion) { return }
 	debug(`.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  MOTION`)
 	motionSticky = true
 	turnLightsOn()
@@ -76,6 +80,10 @@ const increaseLightInterval = function() {
 	lightIntervalIndex = Math.min(lightIntervalIndex + 1, lightIntervals.length - 1)
 }
 
+const maxLightInterval = function() {
+	lightIntervalIndex = lightIntervals.length - 1;
+}
+
 const resetLightInterval = function() {
 	lightIntervalIndex = 0
 }
@@ -85,7 +93,9 @@ const resetLightInterval = function() {
 var lights = null // set by main from argv
 const lowOn = lightState.create().on(true).hsb(250, 100, 0)
 const on = lightState.create().on(true).white(325, 100	).transition(3000)
+const userSignalLightsOn = lightState.create().on(true).hsb(300, 100, 100).transition(1000)
 const lowOff = lightState.create().on(true).hsb(250, 100, 0).transition(120000)
+const fastLowOff = lightState.create().on(true).hsb(250, 100, 0).transition(3000)
 const off = lightState.create().on(false)
 
 // used to transition between low on to on and low off to off states.
@@ -125,6 +135,33 @@ const turnLightsOff = function() {
 	} 
 }
 
+// user request lights on
+const userOn = function() {
+	debug('user request lights on')
+	ignoreMotion = true
+	maxLightInterval()
+	setLights(lights, userSignalLightsOn)
+	setTimeout(function() {
+		ignoreMotion = false
+		setLights(lights, on)
+		_lightState = 'on'
+	}, 5000)
+}
+
+// user request lights off
+const userOff = function() {
+	debug('user request lights off')
+	ignoreMotion = true
+	resetLightInterval()
+	setLights(lights, fastLowOff)
+	_lightState = 'lowOff'
+	setTimeout(function() {
+		setLights(lights, off)
+		_lightState = 'off'
+		ignoreMotion = false
+	}, 10000)
+}
+
 const setLights = function(lights, lightState) {
 	lights.forEach(function(light) {
 		api.setLightState(light.id, lightState)
@@ -138,18 +175,25 @@ const isDaytime = function() {
 
 const loop = function() {
 	particle.getMotion()
-	.then(function(reply) {
-		if (reply.return_value === 1) {
-			onMotion()
-		} else if (reply.return_value === 2) {
-			onHighMotion()
-			onMotion()
-		}
-		setTimeout(loop, 1000)
-	}).catch(function(err) {
-		debug(`Caught error: ${err}`)
-		setTimeout(loop, 10000)
-	})
+		.then(function(reply) {
+			if (reply.return_value === 1) {
+				onMotion()
+			} 
+			return particle.getButton()
+		}).then(function(buttonState) {
+			if (buttonState.return_value === 1) {
+				// one press button
+				userOff()
+			}
+			if (buttonState.return_value === 2) {
+				// double press button
+				userOn()
+			}
+			setTimeout(loop, 1000)
+		}).catch(function(err) {
+			debug(`Caught error: ${err}`)
+			setTimeout(loop, 10000)
+		})
 }
 
 const main = function() {
