@@ -1,4 +1,5 @@
 // turn lights on during eveningh hours
+// flicker lights
 
 const hue = require("node-hue-api")
 const moment = require("moment")
@@ -15,8 +16,14 @@ var lights = null // set by main from argv
 const on = lightState.create().on(true).hsb(40, 100, 20).transition(3000)
 const off = lightState.create().on(false)
 
+const randomOnState = function() {
+	const _hue = Math.floor(Math.random()*100)
+	const bri = Math.floor(Math.random()* 40)
+	return lightState.create().on(true).hsb(_hue, 100, 0).transition(60000)
+}
+
 const turnLightsOn = function() {
-	setLights(lights, on)	
+	setLights(lights, randomOnState())	
 }
 
 const turnLightsOff = function() {
@@ -31,7 +38,6 @@ const setLights = function(lights, lightState) {
 
 const onTime = function() {
 	let h = moment().hour()
-	debug(h)
 	return (h > 18 && h < 23)
 }
 
