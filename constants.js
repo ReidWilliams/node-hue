@@ -8,6 +8,10 @@ exports.lights = [
 	{
   	name: 'office-desk2',
   	id: 7
+  },
+  {
+  	name: 'living-room-shelf',
+  	id: 3
   }];
 
 exports.ip = '192.168.100.8';
