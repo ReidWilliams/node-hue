@@ -11,28 +11,41 @@ const lightName = require('./lib/LightName')
 
 const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}     ${m}`) }
 
-// light controls
-var lights = null // set by main from argv
-const on = lightState.create().on(true).hsb(40, 100, 20).transition(3000)
+const lights = [
+	{
+		name: 'living-room-shelf',
+		state: function() {
+			const _hue = Math.floor(Math.random()*100)
+			const bri = Math.floor(Math.random()* 40)
+			return lightState.create().on(true).hsb(_hue, 100, 0).transition(60000)
+		}
+	},
+	{
+		name: 'front-entryway',
+		state: function() {
+			return lightState.create().on(true).white(350, 100)
+		}
+	}
+]
+
 const off = lightState.create().on(false)
 
-const randomOnState = function() {
-	const _hue = Math.floor(Math.random()*100)
-	const bri = Math.floor(Math.random()* 40)
-	return lightState.create().on(true).hsb(_hue, 100, 0).transition(60000)
-}
-
 const turnLightsOn = function() {
-	setLights(lights, randomOnState())	
+	_.each(lights, light => {
+		setLights([light.name], light.state())
+	})	
 }
 
 const turnLightsOff = function() {
-	setLights(lights, off)
+	_.each(lights, light => {
+		setLights([light.name], off)
+	})
 }
 
 const setLights = function(lights, lightState) {
 	lights.forEach(function(light) {
-		api.setLightState(light.id, lightState)
+		const lightObject = lightName.lightNamed(light)
+		api.setLightState(lightObject.id, lightState)
 	})
 }
 
@@ -50,23 +63,9 @@ const setLightState = function() {
 }
 
 const main = function() {
-	if (process.argv.length < 3) {
-		usage()
-		process.exit(0)
-	}
-
 	debug(`starting`)
-	lights = lightName.lightsFromNamesOrExit(process.argv.slice(2))
-	setLights(lights, off)
 	setLightState()
 	setInterval(setLightState, 60000)
-}
-
-const usage = function() {
-	debug("usage: node " + __filename + " LIGHTNAME LIGHTNAME ...")
-	debug("Each LIGHTNAME is the name of a light defined in constants.js:")
-	var lightNames = _.pluck(constants.lights, 'name').join(", ")
-	debug('"' + lightNames + '"')
 }
 
 main()
