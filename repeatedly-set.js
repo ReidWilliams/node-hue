@@ -21,7 +21,7 @@ var main = function() {
 	var seconds = parseInt(process.argv[5]);
 
 	setInterval(function() {
-		var ls = lightState.create().on(true).white(color, brightness).transition(seconds * 1000);
+		var ls = lightState.create().on(true).white(color, brightness);
 		api.setLightState(light.id, ls);
 	}, seconds * 1000);
 }
