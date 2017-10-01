@@ -16,8 +16,12 @@ exports.lights = [
   {
     name: 'front-entryway',
     id: 8
+  },
+  {
+    name: 'bedroom',
+    id: 2
   }
   ];
 
-exports.ip = '192.168.100.8';
+exports.ip = '192.168.7.35';
 exports.username = '24f1532c2c510fef33c1930416a95b87';
