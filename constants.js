@@ -19,6 +19,11 @@ exports.lights = [
 	{
   	name: 'office-desk2',
   	id: 7
+  },
+
+  {
+    name: 'office-desk',
+    id: 9
   }
 ];
 
