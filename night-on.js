@@ -26,20 +26,6 @@ const lights = [
 		state: function() {
 			return lightState.create().on(true).white(350, 100)
 		}
-	},
-
-	{
-		name: 'office-desk',
-		state: function() {
-			return lightState.create().on(true).white(350, 100)
-		}
-	},
-
-	{
-		name: 'office-desk2',
-		state: function() {
-			return lightState.create().on(true).white(350, 100)
-		}
 	}
 ]
 
