@@ -17,7 +17,7 @@ const lights = [
 		state: function() {
 			const _hue = Math.floor(Math.random()*100)
 			// rarely set hue to pink
-			if (Math.random() < (1/60)) {
+			if (Math.random() < (1/5)) {
 				_hue = 300
 			}
 			return lightState.create().on(true).hsb(_hue, 100, 0).transition(60000)
