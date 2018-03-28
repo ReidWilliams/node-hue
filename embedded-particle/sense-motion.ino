@@ -49,6 +49,9 @@ const int NO_MOTION = 0;
 const int MOTION = 1;
 const int HIGH_MOTION = 2;
 
+// used to temporarily set LED to a color
+int keepLEDColor = 0;
+
 void setup() {
     pinMode(kGnd, OUTPUT);
     digitalWrite(kGnd, LOW);
@@ -102,6 +105,17 @@ void buttonLoop() {
   if ((millis() - lastButtonReleaseTime) > doubleClickDelay) {
     // time to wait for a second click is up
     if (buttonPresses > 0) {
+      if (buttonPresses == 1) {
+        // set LED to show single button press
+        RGB.color(114, 0, 255);
+        keepLEDColor = 20; // keep color for 20 cycles
+      }
+
+      if (buttonPresses == 2) {
+        // set LED to show double button press
+        RGB.color(255, 0, 163);
+        keepLEDColor = 20;
+      }
       buttonPressesForCloud = buttonPresses;
       buttonPresses = 0;
     }
@@ -109,15 +123,20 @@ void buttonLoop() {
 }
 
 void updateDisplay() {
-  if (kDebugLED) {
-    if (motionState == HIGH_MOTION) {
-      RGB.color(0, 0, 255);
-    } else {
-      int b = (int) (((float)highReads / (float)reallyOnThreshold) * 255);
-      RGB.color(b, 0, 0);
-    }
+  if (keepLEDColor > 0) {
+    // keep the LED color the same
+    keepLEDColor = keepLEDColor - 1;
   } else {
-    RGB.color(0, 0, 0);
+    if (kDebugLED) {
+      if (motionState == HIGH_MOTION) {
+        RGB.color(0, 0, 255);
+      } else {
+        int b = (int) (((float)highReads / (float)reallyOnThreshold) * 255);
+        RGB.color(b, 0, 0);
+      }
+    } else {
+      RGB.color(0, 0, 0);
+    }
   }
 }
 
