@@ -18,7 +18,7 @@ const int kSwitchVcc = D5;
 const int kSwitchGnd = D6;
 const int kSwitchSense = D7;
 
-const int debounceDelay = 50;
+const int debounceDelay = 5;
 const int doubleClickDelay = 500;
 
 int lastButtonStateChangeTime = 0;
@@ -38,16 +38,14 @@ const int kPir = D1;
 const int kVcc = D2;
 
 // tracks how many PIR reads have been high in a row
-const int reallyOnThreshold = 180;
 // 10 is too sensitive, 20 works ok
 const int onThreshold = 15;
+const int maxOn = 180;
 int highReads = 0;
 
-// 0 is off, 1 is motion, 2 is waving motion
 int motionState = 0;
 const int NO_MOTION = 0;
 const int MOTION = 1;
-const int HIGH_MOTION = 2;
 
 // used to temporarily set LED to a color
 int keepLEDColor = 0;
@@ -107,13 +105,13 @@ void buttonLoop() {
     if (buttonPresses > 0) {
       if (buttonPresses == 1) {
         // set LED to show single button press
-        RGB.color(114, 0, 255);
+        RGB.color(0, 0, 255);
         keepLEDColor = 20; // keep color for 20 cycles
       }
 
       if (buttonPresses == 2) {
         // set LED to show double button press
-        RGB.color(255, 0, 163);
+        RGB.color(255, 0, 140);
         keepLEDColor = 20;
       }
       buttonPressesForCloud = buttonPresses;
@@ -128,11 +126,11 @@ void updateDisplay() {
     keepLEDColor = keepLEDColor - 1;
   } else {
     if (kDebugLED) {
-      if (motionState == HIGH_MOTION) {
-        RGB.color(0, 0, 255);
+      if (motionState == MOTION) {
+        RGB.color(255, 0, 0);
       } else {
-        int b = (int) (((float)highReads / (float)reallyOnThreshold) * 255);
-        RGB.color(b, 0, 0);
+        int b = (int) (((float)highReads / (float)maxOn) * 255);
+        RGB.color(b, b, b);
       }
     } else {
       RGB.color(0, 0, 0);
@@ -143,7 +141,7 @@ void updateDisplay() {
 void updateMotionState() {
   int read = digitalRead(kPir);
   if (read == HIGH) {
-    highReads = min(highReads + 1, reallyOnThreshold);
+    highReads = min(highReads + 1, maxOn);
   } else {
     highReads = max(highReads - 3, 0);
   }
@@ -152,14 +150,15 @@ void updateMotionState() {
 
   if (highReads >= onThreshold) {
     motionState = MOTION;
+    highReads = 0;
     return;
   }
 
-  if (highReads >= reallyOnThreshold) {
-    motionState = HIGH_MOTION;
-    return;
+  // keep at 0 until cloud reads
+  // state.
+  if (motionState == MOTION) {
+    highReads = 0;
   }
-
 }
 
 // used to remotely turn light on
