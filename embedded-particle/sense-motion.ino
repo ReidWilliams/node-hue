@@ -18,14 +18,13 @@ const int kSwitchVcc = D5;
 const int kSwitchGnd = D6;
 const int kSwitchSense = D7;
 
-const int debounceDelay = 5;
-const int doubleClickDelay = 500;
+const int debounceDelay = 50;
+const int buttonLongPressDelay = 5000;
 
 int lastButtonStateChangeTime = 0;
-int lastButtonReleaseTime = 0;
-int buttonPresses = 0;
-// hold on to button presses until cleared by cloud function
-int buttonPressesForCloud = 0;
+int lastButtonPressTime = 0;
+// hold on to button state until cleared by cloud function
+int buttonStateForCloud = 0;
 bool lastButtonReading = false;
 bool buttonState = false;
 
@@ -79,43 +78,46 @@ bool getButtonState() {
 void buttonLoop() {
   int buttonReading = getButtonState();
 
-  // reset timer
+  // reset timer if button has changed state
   if (buttonReading != lastButtonReading) {
     lastButtonStateChangeTime = millis();
   }
   lastButtonReading = buttonReading;
-
 
   if ((millis() - lastButtonStateChangeTime) > debounceDelay) {
     // It's been debounceDelay and no button state changes
     if (buttonReading != buttonState) {
       // real (not bouncy) change to button state
       buttonState = buttonReading;
-      if (!buttonReading) {
-        // button is off, so increase number of button presses by 1
-        // and set time of last button press
-        buttonPresses = buttonPresses + 1;
-        lastButtonReleaseTime = millis();
-      } 
+      if (buttonReading) {
+        // button was pressed
+        lastButtonPressTime = millis();
+      } else {
+        // button was released
+        if ((millis() - lastButtonPressTime) < buttonLongPressDelay) {
+          // short button press and release
+          // set LED to show short button press
+          RGB.color(0, 0, 255);
+          keepLEDColor = 20; // keep color for 20 cycles
+          buttonStateForCloud = 1;
+        } else {
+          // button release after long press
+          RGB.color(255, 0, 140);
+          keepLEDColor = 20;
+        }
+      }   
     }
-  }
 
-  if ((millis() - lastButtonReleaseTime) > doubleClickDelay) {
-    // time to wait for a second click is up
-    if (buttonPresses > 0) {
-      if (buttonPresses == 1) {
-        // set LED to show single button press
-        RGB.color(0, 0, 255);
-        keepLEDColor = 20; // keep color for 20 cycles
-      }
-
-      if (buttonPresses == 2) {
-        // set LED to show double button press
+    if (buttonState) {
+      // button is being pressed
+      RGB.color(0, 0, 255);
+      keepLEDColor = 1;
+      if (millis() - lastButtonPressTime > buttonLongPressDelay) {
+        // button held
+        // set LED to show long button press
         RGB.color(255, 0, 140);
-        keepLEDColor = 20;
+        buttonStateForCloud = 2;
       }
-      buttonPressesForCloud = buttonPresses;
-      buttonPresses = 0;
     }
   }
 }
@@ -175,14 +177,14 @@ int getMotion(String unused) {
 }
 
 int getButton(String unused) {
-  int r = buttonPressesForCloud;
-  buttonPressesForCloud = 0;
+  int r = buttonStateForCloud;
+  buttonStateForCloud = 0;
   return r;
 }
 
 void loop() {
     delay(50);
     updateDisplay();
-    updateMotionState();
+    // updateMotionState();
     buttonLoop();
 }
