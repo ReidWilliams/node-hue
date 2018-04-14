@@ -18,15 +18,11 @@ const int kSwitchVcc = D5;
 const int kSwitchGnd = D6;
 const int kSwitchSense = D7;
 
-const int debounceDelay = 50;
-const int buttonLongPressDelay = 5000;
-
-int lastButtonStateChangeTime = 0;
+const int buttonLongPressDelay = 2500;
 int lastButtonPressTime = 0;
 // hold on to button state until cleared by cloud function
 int buttonStateForCloud = 0;
 bool lastButtonReading = false;
-bool buttonState = false;
 
 const bool kDebugLED = true;
 // in debug mode the rgb led changes color to show motionState
@@ -72,52 +68,41 @@ void setup() {
 }
 
 bool getButtonState() {
-  return digitalRead(kSwitchSense) == LOW;
+  return digitalRead(kSwitchSense) == HIGH;
 }
 
 void buttonLoop() {
   int buttonReading = getButtonState();
 
-  // reset timer if button has changed state
   if (buttonReading != lastButtonReading) {
-    lastButtonStateChangeTime = millis();
-  }
-  lastButtonReading = buttonReading;
+    lastButtonReading = buttonReading;
 
-  if ((millis() - lastButtonStateChangeTime) > debounceDelay) {
-    // It's been debounceDelay and no button state changes
-    if (buttonReading != buttonState) {
-      // real (not bouncy) change to button state
-      buttonState = buttonReading;
-      if (buttonReading) {
-        // button was pressed
-        lastButtonPressTime = millis();
-      } else {
-        // button was released
-        if ((millis() - lastButtonPressTime) < buttonLongPressDelay) {
-          // short button press and release
-          // set LED to show short button press
-          RGB.color(0, 0, 255);
-          keepLEDColor = 20; // keep color for 20 cycles
-          buttonStateForCloud = 1;
-        } else {
-          // button release after long press
-          RGB.color(255, 0, 140);
-          keepLEDColor = 20;
-        }
-      }   
-    }
-
-    if (buttonState) {
-      // button is being pressed
+    // button just pressed or released
+    if (buttonReading) {
+      // button pressed
+      lastButtonPressTime = millis();
       RGB.color(0, 0, 255);
-      keepLEDColor = 1;
-      if (millis() - lastButtonPressTime > buttonLongPressDelay) {
-        // button held
-        // set LED to show long button press
-        RGB.color(255, 0, 140);
-        buttonStateForCloud = 2;
+      keepLEDColor = 10;
+    } else {
+      // button released
+      if (millis() - lastButtonPressTime < buttonLongPressDelay) {
+        // button released after a short time
+        RGB.color(0, 0, 255);
+        keepLEDColor = 20; // keep color for 20 cycles
+        buttonStateForCloud = 1;
       }
+    }
+  }
+
+  if (buttonReading) {
+    // button is pressed, either just now or before
+    if (millis() - lastButtonPressTime > buttonLongPressDelay) {
+      RGB.color(255, 0, 255);
+      keepLEDColor = 20; // keep color for 20 cycles
+      buttonStateForCloud = 2;
+    } else {
+      RGB.color(0, 0, 255);
+      keepLEDColor = 10;
     }
   }
 }
@@ -185,6 +170,6 @@ int getButton(String unused) {
 void loop() {
     delay(50);
     updateDisplay();
-    // updateMotionState();
+    updateMotionState();
     buttonLoop();
 }

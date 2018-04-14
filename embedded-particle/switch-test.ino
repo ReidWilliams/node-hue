@@ -1,66 +1,78 @@
+/* 
+This version is meant for the black AMN3211 slight motion detector.
+The detector can be installed directly onto the proto board with 
+
+GND pin connecting to spark core's D0
+OUT pin connecting to D1
+VDD pin connecting to D2
+
+We're using digital out pins for power and ground because it's
+convenient and doesn't require any wiring.
+
+This version also has a pushbutton switch. Pushing once or double
+pushing sets variables that are delieved to cloud calling code.
+*/
+
+// switch variable declarations
 const int kSwitchVcc = D5;
 const int kSwitchGnd = D6;
 const int kSwitchSense = D7;
 
-const int debounceDelay = 50;
-const int doubleClickDelay = 300;
+const int buttonLongPressDelay = 5000;
 
-int lastButtonStateChangeTime = 0;
-int lastButtonReleaseTime = 0;
-int buttonPresses = 0;
+int lastButtonPressTime = 0;
+// hold on to button state until cleared by cloud function
+// int buttonStateForCloud = 0;
 bool lastButtonReading = false;
-bool buttonState = false;
+
+const bool kDebugLED = true;
+// in debug mode the rgb led changes color to show motionState
 
 void setup() {
-  pinMode(kSwitchGnd, OUTPUT);
-  digitalWrite(kSwitchGnd, LOW);
-  pinMode(kSwitchVcc, OUTPUT);
-  digitalWrite(kSwitchVcc, HIGH);
-  pinMode(kSwitchSense, INPUT_PULLDOWN);
+    pinMode(kSwitchGnd, OUTPUT);
+    digitalWrite(kSwitchGnd, LOW);
+    pinMode(kSwitchVcc, OUTPUT);
+    digitalWrite(kSwitchVcc, HIGH);
+    pinMode(kSwitchSense, INPUT_PULLDOWN);
 
-  RGB.control(true);
-  RGB.color(255, 255, 255);
+    RGB.control(true);
+
+    // Serial.begin(9600);
 }
 
 bool getButtonState() {
-  return digitalRead(kSwitchSense) == LOW;
+  return digitalRead(kSwitchSense) == HIGH;
 }
 
-void setLED(int clicks) {
-  if (clicks == 1) {
-    RGB.color(0, 0, 255);
-  } else if(clicks == 2) {
-    RGB.color(255, 0, 0);
+void buttonLoop() {
+  int buttonReading = getButtonState();
+
+  if (buttonReading != lastButtonReading) {
+    // button just pressed or released
+    if (buttonReading) {
+      // button pressed
+      lastButtonPressTime = millis();
+      RGB.color(0, 0, 255);
+    } else {
+      // button released
+      if (millis() - lastButtonPressTime < buttonLongPressDelay) {
+        // button released after a short time
+        RGB.color(0, 255, 0);
+      }
+    }
+
+    lastButtonReading = buttonReading;
+  }
+
+  if (buttonReading) {
+    // button is pressed, either just now or before
+    if (millis() - lastButtonPressTime > buttonLongPressDelay) {
+      RGB.color(255, 0, 255);
+    }
   }
 }
 
 void loop() {
-  int buttonReading = getButtonState();
-
-  // reset timer
-  if (buttonReading != lastButtonReading) {
-    lastButtonStateChangeTime = millis();
-  }
-  lastButtonReading = buttonReading;
-
-
-  if ((millis() - lastButtonStateChangeTime) > debounceDelay) {
-    // It's been debounceDelay and no button state changes
-    if (buttonReading != buttonState) {
-      // real (not bouncy) change to button state
-      buttonState = buttonReading;
-      if (!buttonReading) {
-        // button is off, so increase number of button presses by 1
-        // and set time of last button press
-        buttonPresses = buttonPresses + 1;
-        lastButtonReleaseTime = millis();
-      } 
-    }
-  }
-
-  if ((millis() - lastButtonReleaseTime) > doubleClickDelay) {
-    // time to wait for a second click is up
-    setLED(buttonPresses);
-    buttonPresses = 0;
-  }
+    delay(50);
+    buttonLoop();
 }
