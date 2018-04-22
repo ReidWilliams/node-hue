@@ -33,8 +33,8 @@ const int kPir = D1;
 const int kVcc = D2;
 
 // tracks how many PIR reads have been high in a row
-// 10 is too sensitive, 20 works ok
-const int onThreshold = 25;
+// 10 is too sensitive, 25 takes too much motion
+const int onThreshold = 20;
 const int maxOn = 180;
 int highReads = 0;
 
