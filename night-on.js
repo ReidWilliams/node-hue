@@ -16,8 +16,8 @@ const lights = [
 		name: 'living-room-shelf',
 		state: function() {
 			let _hue = Math.floor(Math.random()*100)
-			// rarely set hue to pink
-			if (Math.random() < (1/200)) {
+			// occasionally set hue to pink
+			if (Math.random() < (1/133)) {
 				_hue = 300
 			}
 			return lightState.create().on(true).hsb(_hue, 100, 0).transition(60000)
