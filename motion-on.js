@@ -12,187 +12,231 @@ const lightState = hue.lightState
 const huelib = require('./lib/Hue')
 const lightName = require('./lib/LightName')
 
-const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}     ${m}`) }
+const debug = function(m) { console.log(`[${moment().format('hh:mm:ss')}] ${m}`) }
 
-const lightIntervals = [10, 60,   5*60, 30*60, 60*60 ] // seconds
-const senseIntervals = [10, 5*60, 5*60, 5*60,  10*60 ]
-let lightIntervalIndex = 0
+// Hue lights to control
+let lights = null 
 
-let senseTimerHandle = null
-let lightTimerHandle = null
-let motionSticky = false
+// captures state of inputs, e.g. motion sensor and button
+let eventState = null
 
-// used to temporarily override motion
-let ignoreMotion = false
-
-// called whenever motion is seen
-const onMotion = function() {
-	if (ignoreMotion) { return }
-	debug(`.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  MOTION`)
-	motionSticky = true
-	turnLightsOn()
-	clearTimeout(lightTimerHandle)
-	lightTimerHandle = setTimeout(turnLightsOff, getLightInterval() * 1000)
-
-	// set a timer that determines next time to see if there's been motion
-	// set twice as long as light is on, so that user can wave to turn light on
-	// when it goes off, and process is still sensing
-	if (!senseTimerHandle) {
-		senseTimerHandle = setTimeout(senseTimerExpired, getSenseInterval() * 1000)
-		debug(`LIGHT set (${getLightInterval()} s)`)
-		debug(`                     SENSE set (${getSenseInterval()} s)`)
-	} else {
-		debug(`LIGHT set (${getLightInterval()} s)`)
-	}
+// possible button press event types
+const buttonState = {
+	notPressed: 'notPressed',
+	lightsOff: 'lightsOff',
+	lightsStayOn: 'lightsStayOn'
 }
 
-const onHighMotion = function() {
-	debug(`saw lots of motion, setting interval to max`)
-	lightIntervalIndex = lightIntervals.length - 1
-}
-
-const senseTimerExpired = function() {
-	debug(`                     SENSE expired`)
-	senseTimerHandle = null
-	if (motionSticky) {
-		motionSticky = false
-		increaseLightInterval()
-		// set timer again and wait another sense interval
-		debug(`                     SENSE set (${getSenseInterval()} s)`)
-		senseTimerHandle = setTimeout(senseTimerExpired, getSenseInterval() * 1000)
-	} else {
-		// no motion in last sense interval
-		// set sense interval back to default and turn lights off
-		resetLightInterval()
-	}
-}
-
-const getLightInterval = function() {
-	return lightIntervals[lightIntervalIndex]
-}
-
-const getSenseInterval = function() {
-	return senseIntervals[lightIntervalIndex]
-}
-
-const increaseLightInterval = function() {
-	// don't increase past length of array
-	lightIntervalIndex = Math.min(lightIntervalIndex + 1, lightIntervals.length - 1)
-}
-
-const maxLightInterval = function() {
-	lightIntervalIndex = lightIntervals.length - 1;
-}
-
-const resetLightInterval = function() {
-	lightIntervalIndex = 0
-}
-
-// light controls
-// turn light to low on then fade to on. Turn light to low off, then fade to off
-var lights = null // set by main from argv
-const lowOn = lightState.create().on(true).hsb(250, 100, 0)
-const on = lightState.create().on(true).white(325, 100	).transition(3000)
-const userSignalLightsOn = lightState.create().on(true).hsb(300, 100, 100).transition(1000)
-const lowOff = lightState.create().on(true).hsb(250, 100, 0).transition(120000)
-const fastLowOff = lightState.create().on(true).hsb(250, 100, 0).transition(3000)
-const off = lightState.create().on(false)
-
-// used to transition between low on to on and low off to off states.
-let lightTimer = null
-let _lightState = 'off' // off, lowOff, on, lowOn
-
-const turnLightsOn = function() {
-	if (isDaytime()) { return }
-	if (_lightState === 'off') {
-		// set to lowOn, wait, On
-		clearTimeout(lightTimer)
-		setLights(lights, lowOn)	
-		_lightState = 'lowOn'
-		lightTimer = setTimeout(function() {
-			setLights(lights, on)
-			_lightState = 'on'		
-		}, 1000)
-	} else if (_lightState === 'lowOff') {
-		// straight to on
-		clearTimeout(lightTimer)	
-		setLights(lights, on)
-		_lightState = 'on'		
-	}
-	// if _lightState is lowOn or on, do nothing
-}
-
-const turnLightsOff = function() {
-	if (_lightState === 'on' || _lightState === 'lowOn') {
-		debug(`LIGHT expired`)
-		clearTimeout(lightTimer)
-		setLights(lights, lowOff)
-		_lightState = 'lowOff'
-		lightTimer = setTimeout(function() {
-			setLights(lights, off)
-			_lightState = 'off'
-		}, 120000)
-	} 
-}
-
-// user request lights on
-const userOn = function() {
-	debug('user request lights on')
-	ignoreMotion = true
-	maxLightInterval()
-	setLights(lights, userSignalLightsOn)
-	setTimeout(function() {
-		ignoreMotion = false
-		setLights(lights, on)
-		_lightState = 'on'
-	}, 5000)
-}
-
-// user request lights off
-const userOff = function() {
-	debug('user request lights off')
-	ignoreMotion = true
-	resetLightInterval()
-	setLights(lights, fastLowOff)
-	_lightState = 'lowOff'
-	setTimeout(function() {
-		setLights(lights, off)
-		_lightState = 'off'
-		ignoreMotion = false
-	}, 10000)
-}
-
-const setLights = function(lights, lightState) {
+// talk to hue api to set light state for all lights
+const setLights = function(lightState) {
 	lights.forEach(function(light) {
 		api.setLightState(light.id, lightState)
 	})
 }
 
-const isDaytime = function() {
-	let h = moment().hour()
-	return (h > 7 && h < 17)
+// helper to reset eventState to defaults
+const resetEventState = function() {
+	eventState =  {
+		motionSensed: false,
+		buttonState: buttonState.notPressed
+	}
 }
 
-const loop = function() {
+// syntactic sugar: are there any events
+// to process 
+const noEvents = function() {
+	if (eventState.motionSensed === false
+		&& buttonState === buttonState.notPressed
+	) {
+		return true
+	} else {
+		return false
+	}
+}
+
+/* queue of controllers that control the lights.
+Head of the queue is the currently running controller.
+Should only ever be two in queue: current and next.
+*/
+controllerQueue = []
+
+// loops for lifetime of this program
+const controllerQueueLoop = function() {
+	if (controllerQueue.length === 0) {
+		// No controller, so queue up default
+		controllerQueue.push(new DefaultController())
+	}
+
+	controllerQueue[0].run().then((returnVal) => {
+		// current controller is finished, remove it
+		controllerQueue.shift()
+		controllerQueueLoop()
+	})
+}
+
+/* Here, define series of light controllers. These classes
+contain code that takes control of lights for a period
+of time, typically to fade lights, turn them on or off, 
+etc.
+
+All classes contain a run method that returns a promise that
+resolves when the controller is finished.
+
+All classes contain an interrupt method that forces the controller
+to finish immediately and will cause the run method to resolve
+its promise shortly.
+*/
+
+// DefaultController does nothing but wait until interrupted
+class DefaultController {
+	run() {
+		debug('DefaultController running')
+		return new Promise((resolve, reject) => {
+			this.resolve = resolve
+		})
+	}
+
+	interrupt() {
+		debug('DefaultController interrupted')
+		if (this.resolve) {
+			this.resolve()
+		}
+	}
+}
+
+// Turns lights off immediately
+class BootLightsOffController {
+	run() {
+		const promise = new Promise((resolve, reject) => {
+			debug('BootLightsOffController running')
+			setLights(lightState.create().on(true).hsb(300, 100, 100))
+			setTimeout(() => {
+				setLights(lightState.create().on(false))
+				debug('BootLightsOffController done')
+				resolve()
+			}, 2000)
+		})
+		
+		return promise
+	}
+
+	interrupt() {
+		// Do nothing, this controller can't be interrupted
+		debug('BootLightsOffController interrupted')
+	}
+}
+
+/* Turns lights on for awhile. The sequence goes:
+Turn lights from off to a very low on. Fade up for 3 seconds.
+Stay on for awhile. Very slowly fade off over course of minutes. 
+*/
+class LightsOnController {
+	constructor() {
+		this.states = {
+			off: 'off',
+			of: 'on',
+			fadingOff: 'fadingOff'
+		}
+		this.secondsOn = 30
+		this.fadeOffSeconds = 120
+		this.state = this.states.off
+
+		// shorthand for light states
+		this.lowOn = lightState.create().on(true).hsb(250, 100, 0)
+		this.on = lightState.create().on(true).white(325, 100	).transition(3000)
+		this.lowOff = lightState.create().on(true).hsb(250, 100, 0).transition(this.fadeOffSeconds*1000)
+		this.off = lightState.create().on(false)
+	}
+
+	run() {
+		debug('LightsOnController running')
+		setLights(this.lowOn)
+		setTimeout(() => {
+			setLights(this.on)
+			this.timer = setTimeout(() => {
+				this.fadeOff()
+			}, this.secondsOn*1000)
+		}, 1000)
+
+		return new Promise((resolve, reject) => {
+			this.resolve = resolve
+		})
+	}
+
+	fadeOff() {
+		setLights(this.lowOff)
+		setTimeout(() => {
+			debug('LightsOnController done')
+			setLights(this.off)
+			this.resolve()
+		}, this.fadeOffSeconds*1000)
+	}
+
+	motionSensed() {
+		debug('motionSensed, but doing nothing')
+	}
+
+	interrupt() {
+		debug('LightsOnController interrupted')
+		if (this.resolve) {
+			this.resolve()
+		}
+	}
+}
+
+// contains logic of how to map a set of recent events
+// to correct controller
+const processEvents = function() {
+	if (noEvents()) {
+		return
+	}
+
+	if (eventState.buttonState === buttonState.lightsOff) {
+		debug('lightsOff')
+		return
+	}
+
+	if (eventState.buttonState === buttonState.lightsStayOn) {
+		debug('lightsStayOn')
+		return
+	}
+
+	if (eventState.motionSensed === true) {
+		if (controllerQueue[0] instanceof LightsOnController) {
+			controllerQueue[0].motionSensed()
+		}
+
+		if (controllerQueue[0] instanceof DefaultController) {
+			controllerQueue.push(new LightsOnController())
+			controllerQueue[0].interrupt()
+		}
+
+		return
+	}
+}
+
+const eventLoop = function() {
+	processEvents()
+	resetEventState()
 	particle.getMotion()
 		.then(function(reply) {
 			if (reply.return_value === 1) {
-				onMotion()
+				eventState.motionSensed = true
 			} 
 			return particle.getButton()
 		}).then(function(buttonState) {
 			if (buttonState.return_value === 1) {
-				// one press button
-				userOff()
+				eventState.buttonState = buttonState.lightsOff
+				debug('button off')
 			}
 			if (buttonState.return_value === 2) {
-				// double press button
-				userOn()
+				eventState.buttonState = buttonState.lightsStayOn
+				debug('button long')
 			}
-			setTimeout(loop, 1000)
+			setTimeout(eventLoop, 1000)
 		}).catch(function(err) {
 			debug(`Caught error: ${err}`)
-			setTimeout(loop, 10000)
+			setTimeout(eventLoop, 10000)
 		})
 }
 
@@ -204,8 +248,10 @@ const main = function() {
 
 	debug(`starting`)
 	lights = lightName.lightsFromNamesOrExit(process.argv.slice(2))
-	setLights(lights, off)
-	loop()
+	resetEventState()
+	controllerQueue.push(new BootLightsOffController())
+	controllerQueueLoop()
+	eventLoop()
 }
 
 const usage = function() {
@@ -216,5 +262,7 @@ const usage = function() {
 }
 
 main()
+
+
 
 
