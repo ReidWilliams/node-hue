@@ -4,14 +4,16 @@
 
 const hue = require("node-hue-api")
 const moment = require("moment")
-const constants = require('./constants')
-const api = new hue.HueApi(constants.ip, constants.username)
-const particle = require('./lib/Particle')
 const _ = require('underscore')
-const lightState = hue.lightState
+const assert = require('assert')
+
+const constants = require('./constants')
+const particle = require('./lib/Particle')
 const huelib = require('./lib/Hue')
 const lightName = require('./lib/LightName')
 
+const lightState = hue.lightState
+const api = new hue.HueApi(constants.ip, constants.username)
 const debug = function(m) { console.log(`[${moment().format('hh:mm:ss')}] ${m}`) }
 
 // Hue lights to control
@@ -60,11 +62,16 @@ Should only ever be two in queue: current and next.
 */
 controllerQueue = []
 
+// syntactic sugar to get current controller
+const currentController = function() {
+	return controllerQueue[0]
+}
+
 // loops for lifetime of this program
 const controllerQueueLoop = function() {
 	if (controllerQueue.length === 0) {
 		// No controller, so queue up default
-		controllerQueue.push(new DefaultController())
+		controllerQueue.push(controllers.defaultController)
 	}
 
 	controllerQueue[0].run().then((returnVal) => {
@@ -126,9 +133,9 @@ class BootLightsOffController {
 	}
 }
 
-/* Turns lights on for awhile. The sequence goes:
-Turn lights from off to a very low on. Fade up for 3 seconds.
-Stay on for awhile. Very slowly fade off over course of minutes. 
+/* Controls turning lights on and keeping on in response to motion. 
+Controller fades lights up, then keeps on for a time, then
+fades off.
 */
 class LightsOnController {
 	constructor() {
@@ -184,6 +191,28 @@ class LightsOnController {
 	}
 }
 
+// Turn lights off immediately in response to user in put
+class LightsOffController {
+	run() {
+		debug('LightsOffController running')
+	}
+
+	interrupt() {
+		debug('LightsOffController interrupted')
+	}
+}
+
+/* Holds single instances of each controller type. Design pattern
+each controller class has a single instance that is never destroyed,
+instead run and interrupted as needed.
+*/
+const controllers = {
+	defaultController: 			 new DefaultController()
+	bootLightsOffController: new BootLightsOffController()
+	lightsOnController:      new LightsOnController()
+	lightsOffController:     new LightsOffController()
+}
+
 // contains logic of how to map a set of recent events
 // to correct controller
 const processEvents = function() {
@@ -191,24 +220,48 @@ const processEvents = function() {
 		return
 	}
 
+	// Never interrupt LightsOffController or BootLightsOff
+	// controllers and no need to deliver any messages
+	if ((currentController() instanceof LightsOffController)
+		|| currentController() instanceof BootLightsOffController
+	) {
+		return
+	}
+
+	assert((
+		currentController() 	 instanceof DefaultController
+		|| currentController() instanceof LightsOnController
+		), 'Unrecognized controller in processEvents'
+
+	// lightsOff event interrupts everything (except LightsOffController)
 	if (eventState.buttonState === buttonState.lightsOff) {
-		debug('lightsOff')
+		controllerQueue.push(controllers.lightsOffController)
+		currentController().interrupt()
 		return
 	}
 
 	if (eventState.buttonState === buttonState.lightsStayOn) {
-		debug('lightsStayOn')
+		// either queue up LightsOnController or let it know that
+		// event came in
+		if (currentController() instanceof LightsOnController) {
+			currentController().userRequestKeepLightsOn()
+		} else {
+			// controller is default
+			controllerQueue.push(controllers.lightsOnController)
+			currentController().interrupt()
+		}
+
 		return
 	}
 
 	if (eventState.motionSensed === true) {
-		if (controllerQueue[0] instanceof LightsOnController) {
-			controllerQueue[0].motionSensed()
+		if (currentController() instanceof LightsOnController) {
+			currentController().motionSensed()
 		}
 
-		if (controllerQueue[0] instanceof DefaultController) {
-			controllerQueue.push(new LightsOnController())
-			controllerQueue[0].interrupt()
+		if (currentController() instanceof DefaultController) {
+			controllerQueue.push(controllers.lightsOnController)
+			currentController().interrupt()
 		}
 
 		return
@@ -249,7 +302,7 @@ const main = function() {
 	debug(`starting`)
 	lights = lightName.lightsFromNamesOrExit(process.argv.slice(2))
 	resetEventState()
-	controllerQueue.push(new BootLightsOffController())
+	controllerQueue.push(controllers.bootLightsOffController)
 	controllerQueueLoop()
 	eventLoop()
 }
