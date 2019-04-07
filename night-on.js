@@ -15,7 +15,7 @@ const lights = [
 	{
 		name: 'living-room-shelf',
 		state: function() {
-			let _brightness = Math.floor(Math.random()*30)
+			let _brightness = 0
 			let _hue = Math.floor(Math.random()*75)
 
 			// occasionally set hue to pink
