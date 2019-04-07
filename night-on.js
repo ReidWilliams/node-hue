@@ -77,7 +77,7 @@ const setLights = function(lights, lightState) {
 
 const onTime = function() {
 	let h = moment().hour()
-	return (h >= 17 || h <= 1)
+	return (h >= 17 || h <= 7)
 }
 
 const setLightState = function() {
