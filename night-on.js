@@ -1,4 +1,4 @@
-// turn lights on during eveningh hours
+// turn lights on during evening hours
 // flicker lights
 
 const hue = require("node-hue-api")
@@ -15,12 +15,20 @@ const lights = [
 	{
 		name: 'living-room-shelf',
 		state: function() {
-			let _hue = Math.floor(Math.random()*100)
+			let _brightness = 0
+			let _hue = Math.floor(Math.random()*75)
+
 			// occasionally set hue to pink
 			if (Math.random() < (1/133)) {
-				_hue = 300
+				_hue = 300 + Math.floor(Math.random() * 50)
+
+				// very occasionally set light to really bright
+				if (Math.random() < (1/10)) {
+					_brightness = 100
+				}
 			}
-			return lightState.create().on(true).hsb(_hue, 100, 0).transition(60000)
+
+			return lightState.create().on(true).hsb(_hue, 100, _brightness).transition(60000)
 		}
 	},
 
