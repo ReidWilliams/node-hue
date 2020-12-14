@@ -15,20 +15,17 @@ const lights = [
 	{
 		name: 'living-room-shelf',
 		state: function() {
-			let _brightness = 0
-			let _hue = Math.floor(Math.random()*75)
+			let brightness = 0
+			// red - yellow, purple - red
+			let hue = Math.floor((Math.random()*169 + 260) % 359)
 
-			// occasionally set hue to pink
-			if (Math.random() < (1/133)) {
-				_hue = 300 + Math.floor(Math.random() * 50)
-
-				// very occasionally set light to really bright
-				if (Math.random() < (1/10)) {
-					_brightness = 100
-				}
+			// occasionally set hue to bright pink
+			if (Math.random() < (1/500)) {
+				hue = 340
+				brightness = 100
 			}
 
-			return lightState.create().on(true).hsb(_hue, 100, _brightness).transition(60000)
+			return lightState.create().on(true).hsb(hue, 100, brightness).transition(60000)
 		}
 	},
 
@@ -38,20 +35,6 @@ const lights = [
 	// 		return lightState.create().on(true).white(350, 100)
 	// 	}
 	// },
-
-	//{
-	//	name: 'office-desk',
-	//	state: function() {
-	//		return lightState.create().on(true).white(350, 100)
-	//	}
-	//},
-
-	//{
-	//	name: 'office-desk2',
-	//	state: function() {
-	//		return lightState.create().on(true).white(350, 100)
-	//	}
-	//}
 ]
 
 const off = lightState.create().on(false)
@@ -77,7 +60,7 @@ const setLights = function(lights, lightState) {
 
 const onTime = function() {
 	let h = moment().hour()
-	return (h >= 17 && h <= 21)
+	return (h >= 17 && h <= 22)
 }
 
 const setLightState = function() {
