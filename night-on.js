@@ -39,19 +39,19 @@ const lights = [
 		}
 	},
 
-	{
-		name: 'office-desk',
-		state: function() {
-			return lightState.create().on(true).white(350, 100)
-		}
-	},
+	//{
+	//	name: 'office-desk',
+	//	state: function() {
+	//		return lightState.create().on(true).white(350, 100)
+	//	}
+	//},
 
-	{
-		name: 'office-desk2',
-		state: function() {
-			return lightState.create().on(true).white(350, 100)
-		}
-	}
+	//{
+	//	name: 'office-desk2',
+	//	state: function() {
+	//		return lightState.create().on(true).white(350, 100)
+	//	}
+	//}
 ]
 
 const off = lightState.create().on(false)
@@ -77,7 +77,7 @@ const setLights = function(lights, lightState) {
 
 const onTime = function() {
 	let h = moment().hour()
-	return (h >= 17 || h <= 7)
+	return (h >= 17 && h <= 21)
 }
 
 const setLightState = function() {
