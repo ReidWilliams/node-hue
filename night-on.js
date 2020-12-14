@@ -32,12 +32,12 @@ const lights = [
 		}
 	},
 
-	{
-		name: 'front-entryway',
-		state: function() {
-			return lightState.create().on(true).white(350, 100)
-		}
-	},
+	// {
+	// 	name: 'front-entryway',
+	// 	state: function() {
+	// 		return lightState.create().on(true).white(350, 100)
+	// 	}
+	// },
 
 	//{
 	//	name: 'office-desk',
