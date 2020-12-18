@@ -17,7 +17,12 @@ const lights = [
 		state: function() {
 			let brightness = 0
 			// red - yellow, purple - red
-			let hue = Math.floor((Math.random()*169 + 260) % 359)
+			// Random
+			// let hue = Math.floor((Math.random()*169 + 260) % 359)
+
+			// hue from time
+			let hue = hueFromTime()
+			console.log(`setting hue to ${hue}`)
 
 			// occasionally set hue to bright pink
 			if (Math.random() < (1/500)) {
@@ -69,6 +74,24 @@ const setLightState = function() {
 	} else {
 		turnLightsOff()
 	}
+}
+
+const minsDiff = (start, end) => {
+	return end >= start ? end - start : (1440 - start) + end
+}
+
+const hueFromTime = () => {
+	const start = 17*60 // start at 5pm
+	const now = moment().hour()*60 + moment().minute()
+	const end = 23*60 // end at 10pm
+
+	const diffToNow = minsDiff(start, now)
+	const diffToEnd = minsDiff(start, end)
+	const ratio = 1 - (diffToNow / diffToEnd)
+	// Ratio is 1 at start, 0 at end
+
+	// Range from 70 (yellow) to 260 (blue)
+	return Math.floor((260 + 169*ratio) % 359)
 }
 
 const main = function() {
