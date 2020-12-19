@@ -65,7 +65,7 @@ const setLights = function(lights, lightState) {
 
 const onTime = function() {
 	let h = moment().hour()
-	return (h >= 17 && h <= 22)
+	return (h >= 17 && h <= 23)
 }
 
 const setLightState = function() {
@@ -83,7 +83,7 @@ const minsDiff = (start, end) => {
 const hueFromTime = () => {
 	const start = 17*60 // start at 5pm
 	const now = moment().hour()*60 + moment().minute()
-	const end = 23*60 // end at 10pm
+	const end = 24*60 // end at midnight
 
 	const diffToNow = minsDiff(start, now)
 	const diffToEnd = minsDiff(start, end)
