@@ -22,7 +22,22 @@ const lights = [
 
 			// hue from time
 			let hue = hueFromTime()
-			console.log(`setting hue to ${hue}`)
+
+			// occasionally set hue to bright pink
+			if (Math.random() < (1/500)) {
+				hue = 340
+				brightness = 100
+			}
+
+			return lightState.create().on(true).hsb(hue, 100, brightness).transition(60000)
+		}
+	},
+
+	{
+		name: 'front-entryway',
+		state: function() {
+			let brightness = 0
+			let hue = hueFromTime()
 
 			// occasionally set hue to bright pink
 			if (Math.random() < (1/500)) {
