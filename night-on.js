@@ -36,7 +36,7 @@ const lights = [
 	{
 		name: 'front-entryway',
 		state: function() {
-			let brightness = 0
+			let brightness = 100
 			let hue = hueFromTime()
 
 			// occasionally set hue to bright pink
