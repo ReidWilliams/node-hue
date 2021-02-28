@@ -9,6 +9,8 @@ const _ = require('underscore')
 const lightState = hue.lightState
 const lightName = require('./lib/LightName')
 
+const off = lightState.create().on(false)
+
 const debug = function(m) { console.log(`${moment().format('MMM DD hh:mm:ss')}     ${m}`) }
 
 const lights = [
@@ -30,7 +32,10 @@ const lights = [
 			}
 
 			return lightState.create().on(true).hsb(hue, 100, brightness).transition(60000)
-		}
+		},
+		isOn: function(h) {
+			return (h >= 17 && h <= 23)
+		},
 	},
 
 	{
@@ -46,30 +51,12 @@ const lights = [
 			}
 
 			return lightState.create().on(true).hsb(hue, 100, brightness).transition(60000)
-		}
+		},
+		isOn: function(h) {
+			return (h >= 17 || h <= 7)
+		},
 	},
-
-	// {
-	// 	name: 'front-entryway',
-	// 	state: function() {
-	// 		return lightState.create().on(true).white(350, 100)
-	// 	}
-	// },
 ]
-
-const off = lightState.create().on(false)
-
-const turnLightsOn = function() {
-	_.each(lights, light => {
-		setLights([light.name], light.state())
-	})	
-}
-
-const turnLightsOff = function() {
-	_.each(lights, light => {
-		setLights([light.name], off)
-	})
-}
 
 const setLights = function(lights, lightState) {
 	lights.forEach(function(light) {
@@ -78,17 +65,16 @@ const setLights = function(lights, lightState) {
 	})
 }
 
-const onTime = function() {
-	let h = moment().hour()
-	return (h >= 17 && h <= 23)
-}
-
 const setLightState = function() {
-	if (onTime()) {
-		turnLightsOn()
-	} else {
-		turnLightsOff()
-	}
+	const hour = moment().hour()	
+
+	_.each(lights, light => {
+		if (light.isOn(hour)) {
+			setLights([light.name], light.state())
+		} else {
+			setLights([light.name], off)
+		}
+	})
 }
 
 const minsDiff = (start, end) => {
@@ -106,7 +92,8 @@ const hueFromTime = () => {
 	// Ratio is 1 at start, 0 at end
 
 	// Range from 70 (yellow) to 260 (blue)
-	return Math.floor((260 + 169*ratio) % 359)
+	const hue = Math.floor((260 + 169*ratio) % 359)
+	return Math.min(hue, 260)
 }
 
 const main = function() {
