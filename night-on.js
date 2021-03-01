@@ -82,18 +82,21 @@ const minsDiff = (start, end) => {
 }
 
 const hueFromTime = () => {
-	const start = 17*60 // start at 5pm
 	const now = moment().hour()*60 + moment().minute()
+
+	const start = 17*60 // start at 5pm
 	const end = 24*60 // end at midnight
+
+	// After midnight, once we're at purple, stay there
+	if (now < start) return 260
 
 	const diffToNow = minsDiff(start, now)
 	const diffToEnd = minsDiff(start, end)
 	const ratio = 1 - (diffToNow / diffToEnd)
 	// Ratio is 1 at start, 0 at end
 
-	// Range from 70 (yellow) to 260 (blue)
-	const hue = Math.floor((260 + 169*ratio) % 359)
-	return Math.min(hue, 260)
+	// Range from 70 (yellow) down to 0, to 359 then down to 260 (blue)
+	return Math.floor((260 + 169*ratio) % 359)
 }
 
 const main = function() {
