@@ -53,7 +53,7 @@ const lights = [
 			return lightState.create().on(true).hsb(hue, 100, brightness).transition(60000)
 		},
 		isOn: function(h) {
-			return (h >= 17 || h <= 7)
+			return (h >= 17 || h <= 6)
 		},
 	},
 ]
