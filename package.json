@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "assert": "^1.4.1",
-    "moment": "^2.15.2",
+    "moment": "^2.29.2",
     "node-hue-api": "^1.2.1",
     "promise": "^7.0.4",
     "ramda": "^0.22.1",
