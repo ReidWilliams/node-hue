@@ -9,7 +9,7 @@
   "dependencies": {
     "assert": "^1.4.1",
     "moment": "^2.15.2",
-    "node-hue-api": "^1.2.1",
+    "node-hue-api": "^5.0.0-beta.14",
     "promise": "^7.0.4",
     "ramda": "^0.22.1",
     "spark": "^1.0.0",
